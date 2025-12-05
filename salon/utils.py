@@ -88,7 +88,7 @@ def generate_bill_pdf(appointment):
 
     try:
         services = json.loads(appointment.selected_services)
-    except:
+    except (json.JSONDecodeError, TypeError):
         services = []
 
     c.setFont("Helvetica", 12)
