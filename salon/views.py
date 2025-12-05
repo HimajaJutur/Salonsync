@@ -22,6 +22,8 @@ import os
 from io import BytesIO
 from .models import Appointment, Coupon, Payment
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from .utils import generate_bill_pdf
 
 def register_user(request):
     if request.method == 'POST':
@@ -94,104 +96,111 @@ def profile(request):
 
 @login_required
 def book_appointment(request):
-    # Make sure default coupons exist in DB (safe if function exists)
-    try:
-        ensure_default_coupons()
-    except:
-        pass
+    _ensure_coupons_exist()
 
     if request.method == 'POST':
         form = AppointmentForm(request.POST)
 
         if form.is_valid():
-            appointment = form.save(commit=False)
-            appointment.user = request.user
+            appointment = _create_appointment_object(request, form)
 
-            # Auto-fill CUSTOMER DETAILS
-            appointment.name = request.user.username
-            appointment.email = request.user.email or "noemail@unknown.com"
+            # Apply coupon safely
+            _apply_coupon_logic(request, appointment)
 
-            # Read selected services from hidden field
-            selected_services = request.POST.get("selected_services", "[]")
-            appointment.selected_services = selected_services
-            appointment.total_cost = int(request.POST.get("total_cost", 0))
-            appointment.total_minutes = int(request.POST.get("total_minutes", 0))
+            # Save + generate bill
+            _save_and_generate_pdf(appointment)
 
-            # 🌸 Determine primary service (fallback to OTHER)
-            try:
-                services_list = json.loads(selected_services)
-                if services_list:
-                    appointment.service = services_list[0].get("name", "OTHER")
-                else:
-                    appointment.service = "OTHER"
-            except:
-                appointment.service = "OTHER"
-
-            # ------------------------------
-            # 🎟️ STEP 3 — APPLYING COUPON
-            # ------------------------------
-            coupon_code = request.POST.get("coupon", "").strip().upper()
-            discount_amount = 0
-
-            if coupon_code:
-                try:
-                    # Load coupon
-                    coupon_obj = Coupon.objects.get(code=coupon_code)
-
-                    # Check minimum amount
-                    if appointment.total_cost >= coupon_obj.minimum_amount:
-                        discount_amount = coupon_obj.discount
-                    else:
-                        messages.warning(
-                            request,
-                            f"⚠️ Coupon '{coupon_code}' requires minimum spend of €{coupon_obj.minimum_amount}."
-                        )
-                except Coupon.DoesNotExist:
-                    messages.warning(request, f"⚠️ Coupon '{coupon_code}' is invalid.")
-
-            # Loyalty-only coupon rule
-            if coupon_code == "LOYAL20" and not is_loyal_customer(request.user):
-                messages.error(request, "This coupon is only for loyalty members.")
-                discount_amount = 0
-
-            # Apply discount
-            if discount_amount > 0:
-                appointment.total_cost = max(0, appointment.total_cost - int(discount_amount))
-                appointment.discount_given = int(discount_amount)
-                appointment.coupon_code = coupon_code
-            else:
-                appointment.discount_given = 0
-                appointment.coupon_code = ""
-
-            # SAVE APPOINTMENT
-            appointment.save()
-
-            # -----------------------------
-            # GENERATE BILL PDF
-            # -----------------------------
-            from .utils import generate_bill_pdf
-            pdf_path = generate_bill_pdf(appointment)
-
-
-            messages.success(request, " Appointment booked successfully!")
+            messages.success(request, "Appointment booked successfully!")
             return redirect("my_appointments")
 
-        else:
-            print(" FORM ERRORS:", form.errors.as_json())
-            messages.error(request, "Please fix the form errors and try again.")
+        messages.error(request, "Please fix the form errors and try again.")
     else:
         form = AppointmentForm()
 
-    # Load coupons for dropdown
     coupons = Coupon.objects.all()
 
     return render(request, "salon/book_appointment.html", {
         "form": form,
         "coupons": coupons,
-        'is_loyal': is_loyal_customer(request.user),
+        "is_loyal": is_loyal_customer(request.user),
     })
 
 
+# ---------------------------
+# 🔽 Helper Functions Below
+# ---------------------------
+
+def _ensure_coupons_exist():
+    try:
+        ensure_default_coupons()
+    except Exception:
+        pass
+
+
+def _create_appointment_object(request, form):
+    appointment = form.save(commit=False)
+    appointment.user = request.user
+
+    # Auto-fill details
+    appointment.name = request.user.username
+    appointment.email = request.user.email or "noemail@unknown.com"
+
+    # Read selected services
+    selected_services = request.POST.get("selected_services", "[]")
+    appointment.selected_services = selected_services
+    appointment.total_cost = int(request.POST.get("total_cost", 0))
+    appointment.total_minutes = int(request.POST.get("total_minutes", 0))
+
+    # Determine primary service
+    try:
+        services_list = json.loads(selected_services)
+        appointment.service = services_list[0].get("name", "OTHER") if services_list else "OTHER"
+    except (json.JSONDecodeError, TypeError):
+        appointment.service = "OTHER"
+
+    return appointment
+
+
+def _apply_coupon_logic(request, appointment):
+    coupon_code = request.POST.get("coupon", "").strip().upper()
+    discount_amount = 0
+
+    if coupon_code:
+        try:
+            coupon_obj = Coupon.objects.get(code=coupon_code)
+
+            # Min spend check
+            if appointment.total_cost >= coupon_obj.minimum_amount:
+                discount_amount = coupon_obj.discount
+            else:
+                messages.warning(
+                    request,
+                    f"⚠️ Coupon '{coupon_code}' requires minimum spend of €{coupon_obj.minimum_amount}."
+                )
+        except Coupon.DoesNotExist:
+            messages.warning(request, f"⚠️ Coupon '{coupon_code}' is invalid.")
+
+    # Loyalty rule
+    if coupon_code == "LOYAL20" and not is_loyal_customer(request.user):
+        messages.error(request, "This coupon is only for loyalty members.")
+        discount_amount = 0
+
+    # Apply discount
+    if discount_amount > 0:
+        appointment.total_cost = max(0, appointment.total_cost - int(discount_amount))
+        appointment.discount_given = int(discount_amount)
+        appointment.coupon_code = coupon_code
+    else:
+        appointment.discount_given = 0
+        appointment.coupon_code = ""
+
+
+def _save_and_generate_pdf(appointment):
+    appointment.save()
+
+    # Generate PDF
+    from .utils import generate_bill_pdf
+    generate_bill_pdf(appointment)
 
 
 @login_required
