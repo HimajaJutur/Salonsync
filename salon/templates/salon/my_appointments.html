@@ -1,0 +1,140 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load json_extras %}
+{% block title %}My Appointments | SalonSync{% endblock %}
+
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4">💇‍♀️ My Appointments</h2>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if appointments %}
+  <table class="table table-bordered table-striped align-middle">
+    <thead class="table-dark text-center">
+      <tr>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Services & Totals</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody class="text-center">
+      {% for appt in appointments %}
+        <tr>
+          <!-- DATE -->
+          <td>{{ appt.date }}</td>
+
+          <!-- TIME -->
+          <td>{{ appt.time }}</td>
+
+          <!-- SERVICES -->
+          <td class="text-start">
+            {% with appt.selected_services|safe as data %}
+              {% for s in data|json_loads %}
+                {{ s.name }} — €{{ s.cost }} ({{ s.time }} mins) <br>
+              {% endfor %}
+            {% endwith %}
+            <small class="text-muted">
+              💰 €{{ appt.total_cost }} | ⏱ {{ appt.total_minutes }} mins
+            </small>
+          </td>
+
+          <!-- STATUS BADGE -->
+          <td>
+            {% if appt.status == "CONFIRMED" %}
+              <span class="badge bg-success">Confirmed</span>
+            {% elif appt.status == "CANCELLED" %}
+              <span class="badge bg-secondary">Cancelled</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Pending</span>
+            {% endif %}
+          </td>
+
+          <!-- PAYMENT STATUS -->
+          <td>
+            {% if appt.payment_set.all %}
+              {% with payment=appt.payment_set.last %}
+                {% if payment.status == "SUCCESS" %}
+                  <span class="badge bg-success">Payment Successful</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Payment Pending</span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <a href="{% url 'choose_payment' appt.pk %}" class="btn btn-sm btn-dark">Pay</a>
+            {% endif %}
+          </td>
+
+          <!-- ACTION BUTTONS -->
+          <td>
+              <a href="{% url 'view_bill' appt.pk %}" class="btn btn-sm btn-outline-dark mb-1 w-100">
+                View Bill
+              </a>
+
+              {% with payment=appt.payment_set.last %}
+                  {% if payment and payment.status == "SUCCESS" %}
+                      <!-- ❌ Payment done → No cancel allowed -->
+                      <button class="btn btn-sm btn-secondary w-100" disabled>
+                          Cancel (Paid)
+                      </button>
+
+                  {% elif appt.status == "CANCELLED" %}
+                      <button class="btn btn-sm btn-secondary w-100" disabled>Cancelled</button>
+
+                  {% elif appt.date < today %}
+                      <button class="btn btn-sm btn-secondary w-100" disabled>Cancel</button>
+
+                  {% else %}
+                      <form method="post" action="{% url 'cancel_appointment' appt.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger w-100"
+                                onclick="return confirm('Cancel this appointment?');">
+                          Cancel
+                        </button>
+                      </form>
+                  {% endif %}
+              {% endwith %}
+          </td>
+
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <style>
+    table {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    th {
+      background-color: #000 !important;
+      color: #e7c07d !important;
+    }
+    td {
+      vertical-align: middle;
+    }
+  </style>
+
+  {% else %}
+    <div class="alert alert-info text-center">
+      You haven’t booked any appointments yet.
+      <a href="{% url 'book_appointment' %}" class="btn btn-sm btn-dark mt-2">Book Now</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

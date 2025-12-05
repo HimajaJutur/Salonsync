@@ -1,0 +1,92 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% block title %}Contact Us | SalonSync{% endblock %}
+
+{% block content %}
+<style>
+  .contact-section {
+    background: #fff;
+    padding: 60px 40px;
+  }
+  .contact-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 50px;
+  }
+  .contact-image {
+    flex: 1 1 350px;
+    text-align: center;
+  }
+  .contact-image img {
+    width: 90%;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  .contact-info {
+    flex: 1 1 400px;
+    border: 2px solid #e7c07d;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    background: #fffdf8;
+  }
+  .contact-info h2 {
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #e7c07d;
+  }
+  .contact-info p {
+    color: #333;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+  }
+  .contact-info strong {
+    color: #000;
+  }
+  .contact-info a {
+    color: #e7c07d;
+    text-decoration: none;
+  }
+  .contact-info a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .contact-container {
+      flex-direction: column;
+    }
+    .contact-info {
+      padding: 25px;
+    }
+  }
+</style>
+
+<section class="contact-section">
+  <div class="container">
+    <div class="contact-container">
+      
+      <!-- Left: Image -->
+      <div class="contact-image">
+        <img src="{% static 'salon/img/contact.jpg' %}" alt="SalonSync Contact">
+      </div>
+
+      <!-- Right: Info -->
+      <div class="contact-info">
+        <h2>Reach Out To Us 💛</h2>
+        <p>
+          Whether you want to book an appointment, ask a question, register a complaint, 
+          or share feedback — we’d love to hear from you!
+        </p>
+        <p><strong>Toll-Free:</strong> 1800 123 1952</p>
+        <p><strong>Email (Salon Services):</strong> care.salonsync@gmail.com</p>
+        <p><strong>Email (Products):</strong> products.salonsync@gmail.com</p>
+        <p>We’re available Monday–Saturday, 9:00 AM – 6:00 PM.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

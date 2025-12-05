@@ -1,0 +1,15 @@
+{% extends 'salon/base.html' %}
+{% block title %}Cancel Appointment | SalonSync{% endblock %}
+{% block content %}
+<div class="container my-5" style="max-width:600px;">
+  <div class="card p-4 shadow-sm">
+    <h4 class="mb-3">Cancel Appointment</h4>
+    <p>Are you sure you want to cancel your appointment on <strong>{{ appt.date }}</strong> at <strong>{{ appt.time }}</strong>?</p>
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'my_appointments' %}" class="btn btn-outline-secondary">No, go back</a>
+      <button type="submit" class="btn btn-danger ms-2">Yes, cancel</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
