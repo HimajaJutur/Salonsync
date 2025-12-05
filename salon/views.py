@@ -25,6 +25,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from .utils import generate_bill_pdf
 
+
 def register_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -199,7 +200,6 @@ def _save_and_generate_pdf(appointment):
     appointment.save()
 
     # Generate PDF
-    from .utils import generate_bill_pdf
     generate_bill_pdf(appointment)
 
 
@@ -244,7 +244,7 @@ def view_bill(request, pk):
     if appt.selected_services:
         try:
             selected_services = json.loads(appt.selected_services)
-        except:
+        except (json.JSONDecodeError, TypeError):
             selected_services = []
 
     #  Subtotal in EURO (already stored correctly)
