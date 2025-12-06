@@ -26,8 +26,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install coverage
 
-    # 4. Load environment variables for Django tests
+    # 4. Load environment variables from GitHub Secrets
     - name: Set environment variables
       run: |
         echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
@@ -41,7 +42,7 @@ jobs:
         coverage run manage.py test
         coverage xml
 
-    # 6. SonarCloud Scan
+    # 6. SonarCloud Scan (with coverage)
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@v2
       env:
@@ -52,5 +53,5 @@ jobs:
           -Dsonar.organization=himajajutur
           -Dsonar.python.version=3.12
           -Dsonar.sources=.
+          -Dsonar.coverageReportPaths=coverage.xml
           -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**
-          -Dsonar.python.coverage.reportPaths=coverage.xml
