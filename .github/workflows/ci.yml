@@ -46,14 +46,15 @@ jobs:
       uses: sonarsource/sonarcloud-github-action@master
 
     # 7. Run SonarCloud Scan
-    - name: SonarCloud Scan
+        - name: SonarCloud Scan
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         sonar-scanner \
           -Dsonar.projectKey=HimajaJutur_Salonsync \
           -Dsonar.organization=himajajutur \
-          -Dsonar.python.version=3.12 \
           -Dsonar.sources=. \
+          -Dsonar.python.version=3.12 \
+          -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/** \
           -Dsonar.login=${SONAR_TOKEN}
