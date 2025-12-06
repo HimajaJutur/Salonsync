@@ -32,7 +32,7 @@ jobs:
       run: |
         pylint manage.py salonsync salon --fail-under=10.0
 
-    # 5. Run SonarCloud Scan
+    # 5. Run SonarCloud Scan (new official GitHub Action)
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@v2
       env:
