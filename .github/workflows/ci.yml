@@ -2,33 +2,81 @@ name: Django CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
+    # ---------------------------------------------------
+    # 1. CHECKOUT CODE
+    # ---------------------------------------------------
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    # ---------------------------------------------------
+    # 2. SET UP PYTHON
+    # ---------------------------------------------------
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: "3.12"
 
+    # ---------------------------------------------------
+    # 3. INSTALL DEPENDENCIES
+    # ---------------------------------------------------
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run Pylint
+    # ---------------------------------------------------
+    # 4. RUN PYLINT (must score 10/10)
+    # ---------------------------------------------------
+    - name: Run pylint
       run: |
-        pylint manage.py salonsync salon --ignore-paths=$(paste -s -d, .pylintignore)
+        pylint manage.py salonsync salon --fail-under=10.0
 
-    - name: Run Bandit security scan
+    # ---------------------------------------------------
+    # 5. CACHE SONAR CLOUD BINARY
+    # ---------------------------------------------------
+    - name: Cache SonarCloud Scanner
+      id: cache-sonar
+      uses: actions/cache@v3
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+
+    # ---------------------------------------------------
+    # 6. DOWNLOAD SONAR SCANNER
+    # ---------------------------------------------------
+    - name: Install SonarCloud Scanner
+      uses: sonarsource/sonarcloud-github-action@master
+
+    # ---------------------------------------------------
+    # 7. RUN SONAR SCAN
+    # ---------------------------------------------------
+    - name: SonarCloud Scan
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_PROJECT_KEY: HimajaJutur_Salonsync
+        SONAR_ORGANIZATION: himajajutur
       run: |
-        bandit -r salon -ll
+        sonar-scanner \
+          -Dsonar.projectKey=HimajaJutur_Salonsync \
+          -Dsonar.organization=himajajutur \
+          -Dsonar.python.version=3.12 \
+          -Dsonar.sources=. \
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/** \
+          -Dsonar.login=${SONAR_TOKEN}
+
+    # ---------------------------------------------------
+    # 8. SHOW QUALITY GATE RESULT
+    # ---------------------------------------------------
+    - name: SonarCloud Quality Gate
+      uses: sonarsource/sonarqube-quality-gate-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
