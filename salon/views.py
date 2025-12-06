@@ -58,7 +58,7 @@ def register_user(request):
 
     return render(request, 'salon/register.html', {'form': form})
 
-
+@csrf_protect
 def login_user(request):
     if request.method == 'POST':
         username_or_email = request.POST.get('username')
@@ -97,6 +97,7 @@ def dashboard_view(request):
 def profile(request):
     return render(request, 'salon/profile.html')
 
+@csrf_protect
 @login_required
 def book_appointment(request):
     _ensure_coupons_exist()
@@ -280,6 +281,7 @@ def salon_location(request):
 def services(request):
     return render(request, 'salon/services.html')
 
+@csrf_protect
 @login_required
 def cancel_appointment(request, pk):
     # staff can cancel any; users only their own
@@ -336,7 +338,7 @@ def cancel_appointment(request, pk):
 
 
 
-
+@csrf_protect
 @login_required
 def reactivate_appointment(request, pk):
     # staff can reactivate any; users only their own
@@ -492,7 +494,7 @@ def choose_payment(request, pk):
     return render(request, "salon/payment_method.html", {"appointment": appt})
 
 
-
+@csrf_protect
 @login_required
 def qr_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
@@ -534,7 +536,7 @@ Transaction ID: {tx_id}
         "transaction_id": tx_id
     })
 
-
+@csrf_protect
 @login_required
 def payment_success(request, tx_id):
     payment = get_object_or_404(Payment, transaction_id=tx_id, user=request.user)
@@ -586,7 +588,7 @@ def payment_qr(request, pk):
     qr.save(buffer, format="PNG")
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
-
+@csrf_protect
 @login_required
 def card_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
@@ -610,7 +612,7 @@ def card_payment(request, pk):
 
     return render(request, "salon/card_payment.html", {"appointment": appt})
 
-
+@csrf_protect
 @login_required
 def cash_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
