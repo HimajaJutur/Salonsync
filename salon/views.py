@@ -30,6 +30,7 @@ from django.views.decorators.http import require_http_methods
 
 
 @csrf_protect
+@require_http_methods(["GET"])
 def register_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -61,6 +62,7 @@ def register_user(request):
     return render(request, 'salon/register.html', {'form': form})
 
 @csrf_protect
+@require_http_methods(["GET"])
 def login_user(request):
     if request.method == 'POST':
         username_or_email = request.POST.get('username')
@@ -91,16 +93,20 @@ def logout_user(request):
     return redirect('login')
 
 @login_required
+@require_http_methods(["GET"])
 def dashboard_view(request):
     return render(request, 'salon/dashboard.html', {
         'is_loyal': is_loyal_customer(request.user)
     })
 
+@login_required
+@require_http_methods(["GET"])
 def profile(request):
     return render(request, 'salon/profile.html')
 
 @csrf_protect
 @login_required
+@require_http_methods(["GET", "POST"])
 def book_appointment(request):
     _ensure_coupons_exist()
 
@@ -209,6 +215,7 @@ def _save_and_generate_pdf(appointment):
 
 
 @login_required
+@require_http_methods(["GET"])
 def my_appointments(request):
     appointments = Appointment.objects.filter(user=request.user).order_by('-date', '-time')
 
@@ -224,6 +231,7 @@ def my_appointments(request):
     })
 
 @login_required
+@require_http_methods(["GET"])
 def view_bill(request, pk):
     """
     Non-CRUD Billing:
@@ -273,18 +281,21 @@ def view_bill(request, pk):
         }
     )
 
-
+@require_http_methods(["GET"])
 def contact(request):
     return render(request, 'salon/contact.html')
 
+@require_http_methods(["GET"])
 def salon_location(request):
     return render(request, 'salon/salon_location.html')
 
+@require_http_methods(["GET"])
 def services(request):
     return render(request, 'salon/services.html')
 
 @csrf_protect
 @login_required
+@require_http_methods(["POST"])
 def cancel_appointment(request, pk):
     # staff can cancel any; users only their own
     appt = get_object_or_404(
@@ -342,6 +353,7 @@ def cancel_appointment(request, pk):
 
 @csrf_protect
 @login_required
+@require_http_methods(["POST"])
 def reactivate_appointment(request, pk):
     # staff can reactivate any; users only their own
     appt = get_object_or_404(
@@ -405,6 +417,7 @@ def reactivate_appointment(request, pk):
 
 
 @login_required
+@require_http_methods(["GET"])
 def check_available_slots(request):
     date_str = request.GET.get("date")
     total_minutes = int(request.GET.get("duration", 0))
@@ -482,6 +495,7 @@ def is_loyal_customer(user):
     return total_spent >= 200   # your threshold
 
 @login_required
+@require_http_methods(["GET"])
 def choose_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
 
@@ -540,6 +554,7 @@ Transaction ID: {tx_id}
 
 @csrf_protect
 @login_required
+@require_http_methods(["GET"])
 def payment_success(request, tx_id):
     payment = get_object_or_404(Payment, transaction_id=tx_id, user=request.user)
 
@@ -558,6 +573,7 @@ def payment_success(request, tx_id):
 
 
 @login_required
+@require_http_methods(["GET"])
 def payment_page(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
 
@@ -579,6 +595,7 @@ def payment_page(request, pk):
 
 
 @login_required
+@require_http_methods(["GET"])
 def payment_qr(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
     
@@ -592,6 +609,7 @@ def payment_qr(request, pk):
 
 @csrf_protect
 @login_required
+@require_http_methods(["GET", "POST"])
 def card_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
 
@@ -616,6 +634,7 @@ def card_payment(request, pk):
 
 @csrf_protect
 @login_required
+@require_http_methods(["GET"])
 def cash_payment(request, pk):
     appt = get_object_or_404(Appointment, pk=pk, user=request.user)
 
