@@ -24,8 +24,10 @@ from .models import Appointment, Coupon, Payment
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from .utils import generate_bill_pdf
+from django.views.decorators.csrf import csrf_protect
 
 
+@csrf_protect
 def register_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
