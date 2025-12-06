@@ -46,7 +46,7 @@ jobs:
       uses: sonarsource/sonarcloud-github-action@master
 
     # 7. Run SonarCloud Scan
-        - name: SonarCloud Scan
+    - name: SonarCloud Scan
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
