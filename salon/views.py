@@ -28,7 +28,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @csrf_protect
 def register_user(request):
     if request.method == 'POST':
@@ -60,7 +60,7 @@ def register_user(request):
 
     return render(request, 'salon/register.html', {'form': form})
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @csrf_protect
 def login_user(request):
     if request.method == 'POST':
@@ -86,7 +86,7 @@ def login_user(request):
 
     return render(request, 'salon/login.html')
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 def logout_user(request):
     logout(request)
     return redirect('login')
