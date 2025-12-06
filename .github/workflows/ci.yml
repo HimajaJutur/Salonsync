@@ -11,12 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     # 1. Checkout code
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Set up Python
+    # 2. Setup Python
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -33,28 +32,15 @@ jobs:
       run: |
         pylint manage.py salonsync salon --fail-under=10.0
 
-    # 5. Cache SonarCloud binary
-    - name: Cache SonarCloud Scanner
-      id: cache-sonar
-      uses: actions/cache@v3
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-
-    # 6. Install SonarCloud Scanner
-    - name: Install SonarCloud Scanner
-      uses: sonarsource/sonarcloud-github-action@master
-
-    # 7. Run SonarCloud Scan
+    # 5. Run SonarCloud Scan
     - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@v2
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: |
-        sonar-scanner \
-          -Dsonar.projectKey=HimajaJutur_Salonsync \
-          -Dsonar.organization=himajajutur \
-          -Dsonar.sources=. \
-          -Dsonar.python.version=3.12 \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/** \
-          -Dsonar.login=${SONAR_TOKEN}
+      with:
+        args: >
+          -Dsonar.projectKey=HimajaJutur_Salonsync
+          -Dsonar.organization=himajajutur
+          -Dsonar.python.version=3.12
+          -Dsonar.sources=.
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**
