@@ -34,10 +34,9 @@ jobs:
 
     # 5. Run SonarCloud Scan (new official GitHub Action)
     - name: SonarCloud Scan
-      uses: ssonarsource/sonarcloud-github-action@3f4c23bd98b77af9e8hb3d9caa7d2a9de9
+      uses: sonarsource/sonarcloud-github-action@v2
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         args: >
           -Dsonar.projectKey=HimajaJutur_Salonsync
