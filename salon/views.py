@@ -25,6 +25,8 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from .utils import generate_bill_pdf
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+
 
 
 @csrf_protect
@@ -83,7 +85,7 @@ def login_user(request):
 
     return render(request, 'salon/login.html')
 
-
+@require_http_methods(["GET"])
 def logout_user(request):
     logout(request)
     return redirect('login')
