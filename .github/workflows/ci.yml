@@ -45,10 +45,10 @@ jobs:
         pylint salon salonsync manage.py 
 
     # 6. Run tests with coverage
-    #- name: Run tests with coverage
-     # run: |
-      #  coverage run --source=salon --omit="*/migrations/*" manage.py test
-       # coverage xml
+    - name: Run tests with coverage
+      run: |
+        coverage run --source=salon --omit="*/migrations/*" manage.py test
+        coverage xml
 
     # 7. SonarCloud Scan with test coverage
     - name: SonarCloud Scan
