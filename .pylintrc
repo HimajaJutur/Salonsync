@@ -3,6 +3,7 @@ ignore=migrations,env,media,static,__pycache__
 
 [MESSAGES CONTROL]
 disable=
+    import-error, relative-beyond-top-level, no-name-in-module,
     missing-module-docstring,
     missing-class-docstring,
     missing-function-docstring,
