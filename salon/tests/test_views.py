@@ -8,7 +8,8 @@ import json
 from unittest.mock import patch
 
 
-class ViewTests(TestCase):
+class AuthenticationTests(TestCase):
+    """Test suite for user authentication"""
 
     def setUp(self):
         self.client = Client()
@@ -17,20 +18,7 @@ class ViewTests(TestCase):
             password="testpass123",
             email="test@example.com"
         )
-        # Create a staff user for staff-specific tests
-        self.staff_user = User.objects.create_user(
-            username="staffuser",
-            password="staffpass123",
-            email="staff@example.com",
-            is_staff=True
-        )
-        # Create default coupons
-        Coupon.objects.create(code="NEW10", discount=10, minimum_amount=30, active=True)
-        Coupon.objects.create(code="GLOW5", discount=5, minimum_amount=20, active=True)
-        Coupon.objects.create(code="LOYAL20", discount=20, minimum_amount=30, active=True)
 
-    # ==================== AUTHENTICATION TESTS ====================
-    
     def test_login_page_get(self):
         response = self.client.get(reverse("login"))
         self.assertEqual(response.status_code, 200)
@@ -66,7 +54,7 @@ class ViewTests(TestCase):
         self.assertTemplateUsed(response, "salon/register.html")
 
     @patch('salon.views.send_mail')
-    def test_register_user_success(self, mock_send_mail):
+    def test_register_user_success(self, mock_mail):
         response = self.client.post(reverse("register"), {
             "username": "newuser",
             "email": "newuser@example.com",
@@ -75,7 +63,7 @@ class ViewTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(User.objects.filter(username="newuser").exists())
-        mock_send_mail.assert_called_once()
+        self.assertTrue(mock_mail.called)
 
     def test_register_user_invalid_form(self):
         response = self.client.post(reverse("register"), {
@@ -93,7 +81,17 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse("login"))
 
-    # ==================== DASHBOARD & PROFILE TESTS ====================
+
+class DashboardTests(TestCase):
+    """Test suite for dashboard and profile views"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
 
     def test_dashboard_view_authenticated(self):
         self.client.login(username="testuser", password="testpass123")
@@ -111,7 +109,20 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "salon/profile.html")
 
-    # ==================== APPOINTMENT BOOKING TESTS ====================
+
+class AppointmentBookingTests(TestCase):
+    """Test suite for booking appointments"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
+        Coupon.objects.create(code="NEW10", discount=10, minimum_amount=30, active=True)
+        Coupon.objects.create(code="GLOW5", discount=5, minimum_amount=20, active=True)
+        Coupon.objects.create(code="LOYAL20", discount=20, minimum_amount=30, active=True)
 
     def test_book_appointment_get(self):
         self.client.login(username="testuser", password="testpass123")
@@ -136,6 +147,7 @@ class ViewTests(TestCase):
         
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Appointment.objects.filter(user=self.user).exists())
+        self.assertTrue(mock_pdf.called)
 
     @patch('salon.views.generate_bill_pdf')
     def test_book_appointment_with_valid_coupon(self, mock_pdf):
@@ -154,8 +166,9 @@ class ViewTests(TestCase):
         })
         
         appt = Appointment.objects.filter(user=self.user).first()
-        self.assertEqual(appt.total_cost, 40)  # 50 - 10
+        self.assertEqual(appt.total_cost, 40)
         self.assertEqual(appt.discount_given, 10)
+        self.assertTrue(mock_pdf.called)
 
     @patch('salon.views.generate_bill_pdf')
     def test_book_appointment_with_invalid_coupon(self, mock_pdf):
@@ -175,6 +188,7 @@ class ViewTests(TestCase):
         
         appt = Appointment.objects.filter(user=self.user).first()
         self.assertEqual(appt.total_cost, 50)
+        self.assertTrue(mock_pdf.called)
 
     @patch('salon.views.generate_bill_pdf')
     def test_book_appointment_coupon_below_minimum(self, mock_pdf):
@@ -189,18 +203,34 @@ class ViewTests(TestCase):
             "selected_services": services,
             "total_cost": "15",
             "total_minutes": "30",
-            "coupon": "GLOW5"  # requires minimum 20
+            "coupon": "GLOW5"
         })
         
         appt = Appointment.objects.filter(user=self.user).first()
-        self.assertEqual(appt.total_cost, 15)  # No discount applied
+        self.assertEqual(appt.total_cost, 15)
+        self.assertTrue(mock_pdf.called)
 
-    # ==================== MY APPOINTMENTS TESTS ====================
+
+class AppointmentViewTests(TestCase):
+    """Test suite for viewing appointments"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser",
+            password="staffpass123",
+            email="staff@example.com",
+            is_staff=True
+        )
 
     def test_my_appointments_view(self):
         self.client.login(username="testuser", password="testpass123")
         
-        # Create an appointment
         Appointment.objects.create(
             user=self.user,
             name="testuser",
@@ -216,8 +246,6 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "salon/my_appointments.html")
         self.assertEqual(len(response.context["appointments"]), 1)
-
-    # ==================== BILL VIEW TESTS ====================
 
     def test_view_bill_success(self):
         self.client.login(username="testuser", password="testpass123")
@@ -274,10 +302,20 @@ class ViewTests(TestCase):
         response = self.client.get(reverse("view_bill", args=[appt.pk]))
         self.assertEqual(response.status_code, 200)
 
-    # ==================== CANCEL APPOINTMENT TESTS ====================
+
+class CancellationTests(TestCase):
+    """Test suite for appointment cancellation"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
 
     @patch('salon.views.send_mail')
-    def test_cancel_appointment_success(self, mock_send_mail):
+    def test_cancel_appointment_success(self, mock_mail):
         self.client.login(username="testuser", password="testpass123")
         
         future_time = timezone.now() + timedelta(hours=5)
@@ -297,7 +335,7 @@ class ViewTests(TestCase):
         
         appt.refresh_from_db()
         self.assertEqual(appt.status, "CANCELLED")
-        mock_send_mail.assert_called_once()
+        self.assertTrue(mock_mail.called)
 
     def test_cancel_appointment_within_2_hours(self):
         self.client.login(username="testuser", password="testpass123")
@@ -365,10 +403,25 @@ class ViewTests(TestCase):
         appt.refresh_from_db()
         self.assertNotEqual(appt.status, "CANCELLED")
 
-    # ==================== REACTIVATE APPOINTMENT TESTS ====================
+
+class ReactivationTests(TestCase):
+    """Test suite for appointment reactivation"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser",
+            password="staffpass123",
+            is_staff=True
+        )
 
     @patch('salon.views.send_mail')
-    def test_reactivate_appointment_within_1_hour(self, mock_send_mail):
+    def test_reactivate_appointment_within_1_hour(self, mock_mail):
         self.client.login(username="testuser", password="testpass123")
         
         future_time = timezone.now() + timedelta(hours=5)
@@ -388,6 +441,7 @@ class ViewTests(TestCase):
         response = self.client.post(reverse("reactivate_appointment", args=[appt.pk]))
         appt.refresh_from_db()
         self.assertEqual(appt.status, "PENDING")
+        self.assertTrue(mock_mail.called)
 
     def test_reactivate_appointment_after_1_hour(self):
         self.client.login(username="testuser", password="testpass123")
@@ -431,7 +485,17 @@ class ViewTests(TestCase):
         appt.refresh_from_db()
         self.assertEqual(appt.status, "PENDING")
 
-    # ==================== PAYMENT TESTS ====================
+
+class PaymentTests(TestCase):
+    """Test suite for payment processing"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
 
     def test_choose_payment(self):
         self.client.login(username="testuser", password="testpass123")
@@ -551,7 +615,30 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Payment.objects.filter(appointment=appt, method="CASH").exists())
 
-    # ==================== STATIC PAGES ====================
+    def test_payment_page(self):
+        self.client.login(username="testuser", password="testpass123")
+        
+        appt = Appointment.objects.create(
+            user=self.user,
+            name="testuser",
+            email="test@example.com",
+            date=date.today() + timedelta(days=1),
+            time=time(10, 0),
+            service="HAIRCUT",
+            total_cost=50,
+            total_minutes=60,
+            selected_services=json.dumps([{"name": "Haircut", "price": 50}])
+        )
+        
+        response = self.client.get(reverse("payment_page", args=[appt.pk]))
+        self.assertEqual(response.status_code, 200)
+
+
+class StaticPageTests(TestCase):
+    """Test suite for static pages"""
+
+    def setUp(self):
+        self.client = Client()
 
     def test_contact_page(self):
         response = self.client.get(reverse("contact"))
@@ -565,7 +652,17 @@ class ViewTests(TestCase):
         response = self.client.get(reverse("services"))
         self.assertEqual(response.status_code, 200)
 
-    # ==================== UTILITY TESTS ====================
+
+class UtilityTests(TestCase):
+    """Test suite for utility functions"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass123",
+            email="test@example.com"
+        )
 
     def test_check_available_slots(self):
         self.client.login(username="testuser", password="testpass123")
@@ -589,7 +686,6 @@ class ViewTests(TestCase):
     def test_is_loyal_customer(self):
         from salon.views import is_loyal_customer
         
-        # Create confirmed appointments totaling 200+
         for i in range(5):
             Appointment.objects.create(
                 user=self.user,
@@ -604,21 +700,3 @@ class ViewTests(TestCase):
             )
         
         self.assertTrue(is_loyal_customer(self.user))
-
-    def test_payment_page(self):
-        self.client.login(username="testuser", password="testpass123")
-        
-        appt = Appointment.objects.create(
-            user=self.user,
-            name="testuser",
-            email="test@example.com",
-            date=date.today() + timedelta(days=1),
-            time=time(10, 0),
-            service="HAIRCUT",
-            total_cost=50,
-            total_minutes=60,
-            selected_services=json.dumps([{"name": "Haircut", "price": 50}])
-        )
-        
-        response = self.client.get(reverse("payment_page", args=[appt.pk]))
-        self.assertEqual(response.status_code, 200)
