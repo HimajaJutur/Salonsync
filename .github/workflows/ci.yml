@@ -14,6 +14,8 @@ jobs:
     # 1. Checkout code
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better analysis
 
     # 2. Setup Python
     - name: Set up Python 3.12
@@ -44,22 +46,31 @@ jobs:
       run: |
         pylint salon salonsync manage.py 
 
-    # 6. Run tests with coverage
+    # 6. Run tests with coverage (using pytest-style XML for better compatibility)
     - name: Run tests with coverage
       run: |
         coverage run --source=salon --omit="*/migrations/*" manage.py test
-        coverage xml
+        coverage xml -o coverage.xml
 
-    # 7. SonarCloud Scan with test coverage
+    # 7. Convert coverage format for SonarCloud compatibility
+    - name: Fix coverage report format
+      run: |
+        pip install coverage[toml]
+        # Generate coverage report in Cobertura XML format
+        coverage xml -o coverage.xml
+
+    # 8. SonarCloud Scan with test coverage
     - name: SonarCloud Scan
-      uses: sonarsource/sonarcloud-github-action@v2
+      uses: sonarsource/sonarcloud-github-action@v3
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         args: >
           -Dsonar.projectKey=HimajaJutur_Salonsync
           -Dsonar.organization=himajajutur
-          -Dsonar.sources=.
+          -Dsonar.sources=salon,salonsync
           -Dsonar.python.version=3.12
-          -Dsonar.coverageReportPaths=coverage.xml
-          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**,**/tests/**,**/test_*.py
+          -Dsonar.test.exclusions=**/tests/**,**/test_*.py
