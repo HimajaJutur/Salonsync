@@ -700,3 +700,109 @@ class UtilityTests(TestCase):
             )
         
         self.assertTrue(is_loyal_customer(self.user))
+
+def test_cancel_appointment_with_successful_payment(self):
+    """User cannot cancel appointment that is already paid."""
+    self.client.login(username='testuser', password='testpass123')
+
+    future = timezone.now() + timedelta(hours=5)
+
+    appt = Appointment.objects.create(
+        user=self.user,
+        name='Test User',
+        email='test@example.com',
+        date=future.date(),
+        time=future.time(),
+        service='HAIR',
+        total_cost=50,
+        total_minutes=60
+    )
+
+    Payment.objects.create(
+        user=self.user,
+        appointment=appt,
+        amount=50,
+        method="CARD",
+        status="SUCCESS",
+        transaction_id="tx123"
+    )
+
+    response = self.client.post(f'/appointments/{appt.pk}/cancel/')
+    self.assertEqual(response.status_code, 302)
+
+    appt.refresh_from_db()
+    self.assertNotEqual(appt.status, "CANCELLED")
+
+
+def test_cancel_appointment_within_two_hours(self):
+    """Cancelling within 2 hours should be blocked."""
+    self.client.login(username='testuser', password='testpass123')
+
+    future = timezone.now() + timedelta(minutes=90)
+
+    appt = Appointment.objects.create(
+        user=self.user,
+        name='Test User',
+        email='test@example.com',
+        date=future.date(),
+        time=future.time(),
+        service='HAIR',
+        total_cost=50,
+        total_minutes=60
+    )
+
+    response = self.client.post(f'/appointments/{appt.pk}/cancel/')
+    self.assertEqual(response.status_code, 302)
+
+    appt.refresh_from_db()
+    self.assertNotEqual(appt.status, "CANCELLED")
+
+def test_cancel_already_cancelled_appointment(self):
+    """Cancelling an already cancelled appointment should not change anything."""
+    self.client.login(username='testuser', password='testpass123')
+
+    future = timezone.now() + timedelta(hours=5)
+
+    appt = Appointment.objects.create(
+        user=self.user,
+        name='Test User',
+        email='test@example.com',
+        date=future.date(),
+        time=future.time(),
+        service='HAIR',
+        total_cost=50,
+        total_minutes=60,
+        status='CANCELLED'
+    )
+
+    response = self.client.post(f'/appointments/{appt.pk}/cancel/')
+    self.assertEqual(response.status_code, 302)
+
+    appt.refresh_from_db()
+    self.assertEqual(appt.status, "CANCELLED")
+
+@patch("salon.views.send_mail", side_effect=Exception("Mail error"))
+def test_cancel_appointment_email_failure(self, _mock_mail):
+    """Cancel appointment should still succeed even if email sending fails."""
+    self.client.login(username='testuser', password='testpass123')
+
+    future = timezone.now() + timedelta(hours=5)
+
+    appt = Appointment.objects.create(
+        user=self.user,
+        name='Test User',
+        email='test@example.com',
+        date=future.date(),
+        time=future.time(),
+        service='HAIR',
+        total_cost=50,
+        total_minutes=60
+    )
+
+    response = self.client.post(f'/appointments/{appt.pk}/cancel/')
+    self.assertEqual(response.status_code, 302)
+
+    appt.refresh_from_db()
+    self.assertEqual(appt.status, "CANCELLED")
+
+    
