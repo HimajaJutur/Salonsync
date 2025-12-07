@@ -805,4 +805,40 @@ def test_cancel_appointment_email_failure(self, _mock_mail):
     appt.refresh_from_db()
     self.assertEqual(appt.status, "CANCELLED")
 
-    
+class RegisterUserTests(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+
+    @patch("salon.views.send_mail")
+    def test_register_user_valid(self, mock_send):
+        """Covers: success branch, send_mail, redirect"""
+        response = self.client.post(reverse("register"), {
+            "username": "testuser",
+            "email": "abc@example.com",
+            "password1": "StrongPass123!",
+            "password2": "StrongPass123!",
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(username="testuser").exists())
+        mock_send.assert_called_once()
+
+    def test_register_user_invalid_form(self):
+        """Covers the for-loop over form errors (uncovered red area)"""
+        response = self.client.post(reverse("register"), {
+            "username": "",
+            "email": "bad",
+            "password1": "123",
+            "password2": "321",
+        })
+
+        # stays on same page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "error")
+
+    def test_register_user_get_request(self):
+        """Covers GET request block"""
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "salon/register.html")
