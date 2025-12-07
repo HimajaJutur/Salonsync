@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="container my-5" style="max-width: 750px;">
-  <h2 class="mb-4 text-center">💇‍♀️ Book Your Appointment</h2>
+  <h2 class="mb-4 text-center"> Book Your Appointment</h2>
 
-  <!-- ✅ Success or Error Messages -->
+  <!--  Success or Error Messages -->
   {% if messages %}
     {% for message in messages %}
       <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -16,10 +16,10 @@
     {% endfor %}
   {% endif %}
 
-  <!-- 🧾 Selected Services Summary -->
+  <!--  Selected Services Summary -->
   <div class="card shadow-sm mb-4 border-0 rounded-4">
     <div class="card-body text-center">
-      <h5 class="fw-semibold">🧾 Your Selected Services</h5>
+      <h5 class="fw-semibold"> Your Selected Services</h5>
       <ul id="selectedServicesList" class="list-unstyled my-2"></ul>
       <p class="mb-0">
         <strong>Total:</strong> €<span id="totalCost">0</span> |
@@ -30,11 +30,11 @@
 
   {% if is_loyal %}
     <div class="alert alert-success mt-2">
-      🎉 You are a Loyalty Member — Special discounts unlocked!
+       You are a Loyalty Member — Special discounts unlocked!
     </div>
   {% endif %}
 
-  <!-- 🕒 TIME SLOT CHECKER -->
+  <!--  TIME SLOT CHECKER -->
   <div class="card p-4 mb-4 shadow-sm border-0 rounded-4">
     <h5 class="fw-semibold mb-3">Select Date & Check Available Time Slots</h5>
 
@@ -59,17 +59,17 @@
     <input type="text" name="coupon" id="couponCode" class="form-control" placeholder="Enter coupon (optional)">
   </div> -->
 
-  <!-- 💅 Appointment Form -->
+  <!--  Appointment Form -->
   <div class="card shadow-sm p-4 border-0 rounded-4">
     <form method="POST" novalidate>
       {% csrf_token %}
 
-      <!-- ✅ Add More Services -->
+      <!--  Add More Services -->
       <div class="mb-3 text-start">
         <label class="form-label fw-semibold">Add More Services (optional)</label>
         <select id="addServiceSelect" class="form-select">
           <option value="">-- No additional service --</option>
-          <!-- 💶 EURO prices -->
+          <!--  EURO prices -->
           <option value="Luxury Facial" data-cost="17" data-time="60">Luxury Facial — €17 (60 mins)</option>
           <option value="Express Clean Up" data-cost="9" data-time="30">Express Clean Up — €9 (30 mins)</option>
           <option value="Haircut & Style" data-cost="12" data-time="45">Haircut & Style — €12 (45 mins)</option>
@@ -79,7 +79,7 @@
         </select>
       </div>
 
-      <!-- ✅ Chosen Date & Time (read-only for user) -->
+      <!--  Chosen Date & Time (read-only for user) -->
       <div class="row">
         <div class="col-md-6 mb-3 text-start">
           <label class="form-label fw-semibold">Selected Date</label>
@@ -91,20 +91,20 @@
         </div>
       </div>
 
-      <!-- 🔒 REAL Django date & time fields (hidden from user) -->
+      <!--  REAL Django date & time fields (hidden from user) -->
       <div style="display:none;">
         {{ form.date }}
         {{ form.time }}
       </div>
 
-      <!-- ✅ Notes -->
+      <!--  Notes -->
       <div class="mb-3 text-start">
         <label class="form-label fw-semibold">Additional Notes (optional)</label>
         {{ form.notes }}
       </div>
 
 
-      <!-- 🎟️ Coupon Selection -->
+      <!--  Coupon Selection -->
       <div class="mb-3 text-start">
         <label class="form-label fw-semibold">Apply Coupon (optional)</label>
         <select name="coupon" id="couponDropdown" class="form-select">
@@ -119,14 +119,14 @@
       </div>
 
 
-      <!-- 🔒 Hidden fields for saving services -->
+      <!--  Hidden fields for saving services -->
       <input type="hidden" name="selected_services" id="selectedServicesField">
       <input type="hidden" name="total_cost" id="totalCostField">
       <input type="hidden" name="total_minutes" id="totalMinutesField">
       
 
 
-      <!-- ✅ Buttons -->
+      <!--  Buttons -->
       <div class="text-center">
         <button type="submit" class="btn btn-dark px-4">Submit Booking</button>
         <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4 ms-2">Cancel</a>
@@ -135,7 +135,7 @@
   </div>
 </div>
 
-<!-- 🌸 JS LOGIC -->
+<!--  JS LOGIC -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // Load from localStorage (from Services page)
@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   updateSummary();
 
-  // 🎯 Add More Services from dropdown
+  //  Add More Services from dropdown
   document.getElementById("addServiceSelect").addEventListener("change", function() {
     const selectedOption = this.options[this.selectedIndex];
     const name = selectedOption.value;
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // prevent duplicate
     if (selectedServices.some(s => s.name === name)) {
-      alert(`⚠️ ${name} is already selected.`);
+      alert(` ${name} is already selected.`);
       this.value = "";
       return;
     }
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-// 🕒 SLOT CHECKING + SELECTION
+//  SLOT CHECKING + SELECTION
 function loadSlots() {
   const dateInput = document.getElementById("slot_date");
   const dateVal = dateInput.value;
@@ -264,7 +264,7 @@ function selectSlot(timeVal, dateVal) {
 }
 
 
-// 🎁 Handle coupon selection
+//  Handle coupon selection
 document.getElementById("couponSelect").addEventListener("change", function() {
     const selected = this.options[this.selectedIndex];
     const code = selected.value;

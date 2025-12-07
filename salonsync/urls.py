@@ -21,8 +21,7 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('salon.urls')),  # ✅ connects your salon app URLs
-    # 🌸 Password reset workflow
+    path('', include('salon.urls')),  
     path('reset_password/', 
          auth_views.PasswordResetView.as_view(
              template_name='salon/password_reset.html'

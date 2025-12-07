@@ -16,7 +16,7 @@ urlpatterns = [
     path('appointments/<int:pk>/cancel/', views.cancel_appointment, name='cancel_appointment'),
     path('appointments/<int:pk>/reactivate/', views.reactivate_appointment, name='reactivate_appointment'),
     path('appointments/<int:pk>/bill/', views.view_bill, name='view_bill'),
-    path("appointments/check-slots/", views.check_available_slots, name="check_available_slots"),
+    path("check-slots/", views.check_available_slots, name="check_slots"),
 
     #path("payment/<int:pk>/", views.choose_payment, name="choose_payment"),
     path("payment/qr/<int:pk>/", views.qr_payment, name="qr_payment"),
