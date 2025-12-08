@@ -1,0 +1,104 @@
+name: Deploy to Elastic Beanstalk
+on:
+  workflow_run:
+    workflows: ["Build salonsync (CI)"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Only deploy if triggered manually or CI succeeded
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success')
+    
+    steps:
+      # Checkout repo
+      - name: Download Build Artifact
+        uses: actions/checkout@v4
+      
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      # Install EB CLI
+      - name: Install EB CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install awsebcli
+      
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      # Verify environment exists
+      - name: Verify EB environment exists
+        run: |
+          echo "Checking if environment exists..."
+          ENV_STATUS=$(aws elasticbeanstalk describe-environments \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-names ${{ secrets.EB_ENV_NAME }} \
+            --query 'Environments[?Status!=`Terminated`] | [0].Status' \
+            --output text)
+          
+          if [ -z "$ENV_STATUS" ] || [ "$ENV_STATUS" == "None" ]; then
+            echo "❌ Error: Environment ${{ secrets.EB_ENV_NAME }} does not exist!"
+            echo "Please create the environment first using deploy_eb.py or AWS Console"
+            exit 1
+          else
+            echo "✓ Environment exists with status: $ENV_STATUS"
+          fi
+      
+      # Get platform ARN for eb init
+      - name: Get latest Python platform
+        id: platform
+        run: |
+          PLATFORM_ARN=$(aws elasticbeanstalk list-platform-versions \
+            --filters Type=PlatformName,Operator=contains,Values=Python \
+            --query 'PlatformSummaryList[?PlatformStatus==`Ready`] | [0].PlatformArn' \
+            --output text)
+          echo "platform_arn=$PLATFORM_ARN" >> $GITHUB_OUTPUT
+          echo "Using platform: $PLATFORM_ARN"
+      
+      # Set environment variables from GitHub Secrets
+      - name: Set environment variables in EB
+        run: |
+          echo "Setting environment variables in Elastic Beanstalk..."
+          aws elasticbeanstalk update-environment \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-name ${{ secrets.EB_ENV_NAME }} \
+            --option-settings \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=SECRET_KEY,Value="${{ secrets.SECRET_KEY }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=MAILID,Value="${{ secrets.MAILID }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=MAILPASS,Value="${{ secrets.MAILPASS }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=STRIPE_PUBLIC_KEY,Value="${{ secrets.STRIPE_PUBLIC_KEY }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=STRIPE_SECRET_KEY,Value="${{ secrets.STRIPE_SECRET_KEY }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=DEBUG,Value="False" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=ALLOWED_HOSTS,Value="hotel.us-east-1.elasticbeanstalk.com"
+          
+          echo "Waiting for environment update to complete..."
+          aws elasticbeanstalk wait environment-updated \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-names ${{ secrets.EB_ENV_NAME }}
+          echo "✓ Environment variables set successfully!"
+      
+      # Deploy application
+      - name: Deploy to Elastic Beanstalk
+        run: |
+          cd HotelReservation
+          eb init ${{ secrets.EB_APP_NAME }} \
+            --region "${{ secrets.AWS_REGION }}" \
+            --platform "${{ steps.platform.outputs.platform_arn }}"
+          eb deploy ${{ secrets.EB_ENV_NAME }} \
+            --label "deploy-${{ github.run_id }}" \
+            --timeout 20
