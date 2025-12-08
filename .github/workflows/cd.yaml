@@ -95,7 +95,7 @@ jobs:
       # Deploy application
       - name: Deploy to Elastic Beanstalk
         run: |
-          cd HotelReservation
+          cd salonsync
           eb init ${{ secrets.EB_APP_NAME }} \
             --region "${{ secrets.AWS_REGION }}" \
             --platform "${{ steps.platform.outputs.platform_arn }}"
