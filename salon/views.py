@@ -137,9 +137,7 @@ def book_appointment(request):
     })
 
 
-# ---------------------------
-# 🔽 Helper Functions Below
-# ---------------------------
+
 
 def _ensure_coupons_exist():
     try:

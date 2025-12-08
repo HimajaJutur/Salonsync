@@ -5,9 +5,6 @@ from django.conf import settings
 import os
 import json
 
-# -----------------------------
-# ✔ 1. INR → EUR Converter
-# -----------------------------
 def inr_to_eur(inr):
     """
     Converts INR to Euro using approx. 1 EUR = 89 INR.
