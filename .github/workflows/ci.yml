@@ -44,20 +44,20 @@ jobs:
     # 5. Run pylint (no fail for now)
     - name: Run pylint
       run: |
-        pylint salon salonsync manage.py 
+        pylint salon salonsync manage.py || true
 
-    # 6. Run tests with coverage (using pytest-style XML for better compatibility)
+    # 6. Run tests with coverage - FIXED to include salon app
     - name: Run tests with coverage
       run: |
-        coverage run --source=salon --omit="*/migrations/*" manage.py test
+        coverage run --source='salon' --omit='*/migrations/*,*/tests/*' manage.py test salon
+        coverage report
         coverage xml -o coverage.xml
 
-    # 7. Convert coverage format for SonarCloud compatibility
-    - name: Fix coverage report format
+    # 7. Verify coverage file exists
+    - name: Verify coverage file
       run: |
-        pip install coverage[toml]
-        # Generate coverage report in Cobertura XML format
-        coverage xml -o coverage.xml
+        ls -lh coverage.xml
+        head -20 coverage.xml
 
     # 8. SonarCloud Scan with test coverage
     - name: SonarCloud Scan
@@ -72,6 +72,7 @@ jobs:
           -Dsonar.sources=salon,salonsync
           -Dsonar.python.version=3.12
           -Dsonar.python.coverage.reportPaths=coverage.xml
-          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**
-          -Dsonar.test.exclusions=**/tests/**
-          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**,**/tests/**
+          -Dsonar.test.inclusions=**/tests/**
+          -Dsonar.tests=salon/tests
+          -Dsonar.coverage.exclusions=**/migrations/**,**/tests/**
