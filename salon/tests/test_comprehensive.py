@@ -730,24 +730,3 @@ class SlotAvailabilityTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
 
-# ============================================
-# RUN ALL TESTS
-# ============================================
-
-"""
-To run these tests:
-
-1. Save this file as: salon/tests/test_comprehensive.py
-
-2. Run all tests:
-   coverage run --source='salon' manage.py test salon
-
-3. Check coverage:
-   coverage report
-
-4. Generate HTML report:
-   coverage html
-   open htmlcov/index.html
-
-Expected result: Coverage should increase from 69% to 85%+
-"""
