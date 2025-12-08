@@ -72,5 +72,6 @@ jobs:
           -Dsonar.sources=salon,salonsync
           -Dsonar.python.version=3.12
           -Dsonar.python.coverage.reportPaths=coverage.xml
-          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**,**/tests/**,**/test_*.py
-          -Dsonar.test.exclusions=**/tests/**,**/test_*.py
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**
+          -Dsonar.test.exclusions=**/tests/**
+          -Dsonar.python.coverage.reportPaths=coverage.xml
