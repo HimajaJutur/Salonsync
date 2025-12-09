@@ -1,0 +1,4 @@
+Retrieving logs...
+Logs were saved to /home/ec2-user/environment/Salonsync/.elasticbeanstalk/logs/251209_021543
+Logs were saved to /home/ec2-user/environment/Salonsync/.elasticbeanstalk/logs/251209_021543
+Updated symlink at /home/ec2-user/environment/Salonsync/.elasticbeanstalk/logs/latest

@@ -1,1 +1,1 @@
-web: gunicorn salonsync.wsgi:applicationeb
+   web: gunicorn salonsync.wsgi:application
