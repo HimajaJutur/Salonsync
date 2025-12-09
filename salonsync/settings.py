@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 from decouple import config
-SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-d_gm=0*bzmh-@+1v2245w)+5vtz$%p*snkw1az)(=%_i$^%xcn*&")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 from decouple import config
@@ -83,10 +83,9 @@ WSGI_APPLICATION = "salonsync.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": "/var/app/db/db.sqlite3",
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

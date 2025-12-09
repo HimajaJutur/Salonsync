@@ -42,12 +42,12 @@ class Appointment(models.Model):
     cancelled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-   # 🌸 NEW FIELDS for multiple service booking
+   #  NEW FIELDS for multiple service booking
     selected_services = models.TextField(blank=True)
     total_cost = models.IntegerField(default=0)
     total_minutes = models.IntegerField(default=0)
 
-    # 🌟 STEP 3 — COUPON & DISCOUNT FIELDS (ADD HERE)
+    #  STEP 3 — COUPON & DISCOUNT FIELDS (ADD HERE)
     coupon_code = models.CharField(max_length=20, blank=True, null=True)
     discount_given = models.IntegerField(default=0)
 
