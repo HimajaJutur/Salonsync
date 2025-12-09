@@ -39,8 +39,8 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-django
       
-      - name: Run migrations
-        run: python manage.py migrate --noinput
+      #- name: Run migrations
+       # run: python manage.py migrate --noinput
       
       - name: Run tests
         run: pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing -v
