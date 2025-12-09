@@ -57,20 +57,8 @@ jobs:
         run: |
           pylint salon salonsync manage.py || true
 
-      # 6. Run tests with coverage
-      #- name: Run tests with coverage
-       # run: |
-        #  coverage run --source='salon' --omit='*/migrations/*,*/tests/*' manage.py test salon
-         # coverage report
-          #coverage xml -o coverage.xml
 
-      # 7. Verify coverage file
-      #- name: Verify coverage file
-       # run: |
-        #  ls -lh coverage.xml
-         # head -20 coverage.xml
-
-      # 8. SonarCloud scan
+      # 6. SonarCloud scan
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@v3
         env:
