@@ -8,15 +8,6 @@ venv/
 __pycache__/
 *.pyc
 
-# SQLite database (local only)
-db.sqlite3
-
-# Media uploads (generated at runtime)
-media/
-
-# Staticfiles (collected by Django)
-staticfiles/
-
 # Django migrations should NOT be ignored
 # DO NOT ignore migrations
 
