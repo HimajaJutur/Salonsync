@@ -1,7 +1,7 @@
 name: Deploy to Elastic Beanstalk
 on:
   workflow_run:
-    workflows: ["Build salonsync (CI)"]
+    workflows: ["Django CI"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
