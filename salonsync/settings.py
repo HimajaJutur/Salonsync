@@ -81,9 +81,9 @@ WSGI_APPLICATION = "salonsync.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "/var/app/db/db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -151,3 +151,9 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or "no-reply@example.com"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+CSRF_TRUSTED_ORIGINS = [
+   "https://cd523fbcd2e445b1ae7fe91dff553278.vfs.cloud9.us-east-1.amazonaws.com",
+    'https://*.elasticbeanstalk.com',
+    'http://*.elasticbeanstalk.com',
+]

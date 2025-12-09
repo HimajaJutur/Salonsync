@@ -1,0 +1,96 @@
+deploy:
+  needs: ci
+  runs-on: ubuntu-latest
+  if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+  environment:
+    name: production
+
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download deployment artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: deploy-zip
+        path: .
+
+    - name: Unzip deployment package
+      run: unzip -o app.zip -d deploy
+
+    - name: Setup Python 3.9  # ✔ MATCHES EB PLATFORM
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    - name: Install AWS CLI and EB CLI
+      run: |
+        python -m pip install --upgrade pip
+        pip install awscli awsebcli
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: us-east-1
+
+    - name: Deploy to Elastic Beanstalk
+      id: deploy
+      working-directory: ./deploy
+      run: |
+        set -e
+        
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        S3_BUCKET="elasticbeanstalk-us-east-1-${ACCOUNT_ID}"
+        VERSION_LABEL="v-${{ github.run_number }}-$(echo ${{ github.sha }} | cut -c1-7)-$(date +%s)"
+        
+        APP_NAME="salon"         # ✔ FIXED
+        ENV_NAME="salonenv"      # ✔ FIXED
+
+        echo "Deployment Info:"
+        echo "Version: ${VERSION_LABEL}"
+        echo "Application: ${APP_NAME}"
+        echo "Environment: ${ENV_NAME}"
+        echo "Bucket: ${S3_BUCKET}"
+
+        echo "== Zipping Deployment Package =="
+        zip -r ../deploy.zip . \
+          -x ".git" \
+          -x ".scannerwork" \
+          -x ".pytest_cache" \
+          -x "_pycache_" \
+          -x ".coverage" \
+          -x "htmlcov/*"
+
+        echo "Uploading version to S3..."
+        aws s3 cp ../deploy.zip "s3://${S3_BUCKET}/${APP_NAME}/${VERSION_LABEL}.zip"
+
+        echo "Creating application version..."
+        aws elasticbeanstalk create-application-version \
+          --application-name "$APP_NAME" \
+          --version-label "$VERSION_LABEL" \
+          --source-bundle S3Bucket="${S3_BUCKET}",S3Key="${APP_NAME}/${VERSION_LABEL}.zip"
+
+        echo "Deploying version to environment..."
+        aws elasticbeanstalk update-environment \
+          --application-name "$APP_NAME" \
+          --environment-name "$ENV_NAME" \
+          --version-label "$VERSION_LABEL"
+
+        echo "Waiting for EB to finish..."
+        aws elasticbeanstalk wait environment-updated \
+          --application-name "$APP_NAME" \
+          --environment-names "$ENV_NAME"
+
+        ENV_URL=$(aws elasticbeanstalk describe-environments \
+          --application-name "$APP_NAME" \
+          --environment-names "$ENV_NAME" \
+          --query "Environments[0].CNAME" \
+          --output text)
+
+        echo "url=http://${ENV_URL}" >> $GITHUB_OUTPUT
+        echo ""
+        echo "🚀 Deployment Complete!"
+        echo "Visit → http://${ENV_URL}"

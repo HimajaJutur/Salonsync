@@ -61,7 +61,7 @@ def register_user(request):
     return render(request, 'salon/register.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
-@csrf_protect
+#@csrf_protect
 def login_user(request):
     if request.method == 'POST':
         username_or_email = request.POST.get('username')
