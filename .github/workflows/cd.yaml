@@ -78,11 +78,7 @@ jobs:
             --application-name ${{ secrets.EB_APP_NAME }} \
             --environment-name ${{ secrets.EB_ENV_NAME }} \
             --option-settings \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=SECRET_KEY,Value="${{ secrets.SECRET_KEY }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_PASSWORD,Value="${{ secrets.EMAIL_HOST_PASSWORD }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_USER,Value="${{ secrets.EMAIL_HOST_USER }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_PORT,Value="${{ secrets.EMAIL_PORT }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=DEBUG,Value="False" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=SECRET_KEY,Value="${{ secrets.SECRET_KEY }}"
           
           echo "Waiting for environment update to complete..."
           aws elasticbeanstalk wait environment-updated \
