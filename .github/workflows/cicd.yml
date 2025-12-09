@@ -152,8 +152,8 @@ jobs:
         run: |
           set -e
 
-          APP_NAME="FinalCakeApp"
-          ENV_NAME="finalcake-env"
+          APP_NAME="salon"
+          ENV_NAME="salonenv"
 
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           S3_BUCKET="elasticbeanstalk-us-east-1-${ACCOUNT_ID}"
