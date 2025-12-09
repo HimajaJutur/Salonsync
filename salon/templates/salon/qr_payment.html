@@ -1,0 +1,16 @@
+{% extends 'salon/base.html' %}
+{% block content %}
+<div class="container mt-5 text-center">
+  <h2>Scan to Pay</h2>
+
+  <p>Amount: <strong>€{{ appointment.total_cost }}</strong></p>
+  <p>Transaction ID: {{ transaction_id }}</p>
+
+  <img src="{{ qr_url }}" style="width:250px;height:250px;" />
+
+  <hr>
+  <a href="{% url 'payment_success' transaction_id %}" 
+     class="btn btn-success mt-3">I Have Paid</a>
+
+</div>
+{% endblock %}

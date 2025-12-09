@@ -1,0 +1,76 @@
+name: Django CI
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+    # 2. Setup Python
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    # 3. Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pylint
+
+    # 4. Load environment variables
+    - name: Set environment variables
+      run: |
+        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
+        echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> $GITHUB_ENV
+        echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> $GITHUB_ENV
+        echo "EMAIL_HOST=smtp.gmail.com" >> $GITHUB_ENV
+        echo "EMAIL_PORT=587" >> $GITHUB_ENV
+        echo "EMAIL_USE_TLS=True" >> $GITHUB_ENV
+        echo "DEBUG=False" >> $GITHUB_ENV
+
+    # 5. Run pylint (no fail for now)
+    - name: Run pylint
+      run: |
+        pylint salon salonsync manage.py || true
+
+    # 6. Run tests with coverage - FIXED to include salon app
+    - name: Run tests with coverage
+      run: |
+        coverage run --source='salon' --omit='*/migrations/*,*/tests/*' manage.py test salon
+        coverage report
+        coverage xml -o coverage.xml
+
+    # 7. Verify coverage file exists
+    - name: Verify coverage file
+      run: |
+        ls -lh coverage.xml
+        head -20 coverage.xml
+
+    # 8. SonarCloud Scan with test coverage
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@v3
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        args: >
+          -Dsonar.projectKey=HimajaJutur_Salonsync
+          -Dsonar.organization=himajajutur
+          -Dsonar.sources=salon,salonsync
+          -Dsonar.python.version=3.12
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**,**/tests/**
+          -Dsonar.test.inclusions=**/tests/**
+          -Dsonar.tests=salon/tests
+          -Dsonar.coverage.exclusions=**/migrations/**,**/tests/**

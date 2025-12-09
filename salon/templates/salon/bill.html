@@ -1,0 +1,186 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% block title %}Bill #{{ appointment.id }} | SalonSync{% endblock %}
+
+{% block content %}
+<style>
+  .bill-wrapper {
+    max-width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    padding: 30px 40px;
+    font-family: 'Poppins', sans-serif;
+  }
+  .bill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+  .bill-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bill-logo img {
+    width: 60px;
+    height: auto;
+    border-radius: 8px;
+  }
+  .bill-logo h2 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #000;
+  }
+  .bill-meta {
+    text-align: right;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .bill-section-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  .bill-section {
+    margin-bottom: 18px;
+  }
+  .bill-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .bill-table th,
+  .bill-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+  }
+  .bill-table th {
+    background: #000;
+    color: #e7c07d;
+    text-align: left;
+  }
+  .bill-summary {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 0.95rem;
+  }
+  .bill-summary p {
+    margin: 4px 0;
+  }
+  .bill-summary strong {
+    min-width: 120px;
+    display: inline-block;
+  }
+  .bill-footer {
+    margin-top: 25px;
+    font-size: 0.9rem;
+    color: #777;
+    text-align: center;
+  }
+  .btn-back {
+    margin-top: 20px;
+  }
+</style>
+
+<div class="bill-wrapper">
+
+  <!-- 🌸 HEADER -->
+  <div class="bill-header">
+    <div class="bill-logo">
+      <img src="{% static 'salon/img/logo.png' %}" alt="SalonSync Logo" onerror="this.style.display='none'">
+      <div>
+        <h2>SalonSync</h2>
+        <small>Dublin, Ireland • +353 01 234 5678</small><br>
+        <small>salonsync@example.com</small>
+      </div>
+    </div>
+    <div class="bill-meta">
+      <p><strong>Bill #:</strong> {{ appointment.id }}</p>
+      <p><strong>Date:</strong> {{ appointment.date }}</p>
+      <p><strong>Time:</strong> {{ appointment.time }}</p>
+    </div>
+  </div>
+
+  <!-- 👩 Customer Info -->
+  <div class="bill-section">
+    <p class="bill-section-title">Billed To:</p>
+    <p style="margin:0;"><strong>{{ appointment.name }}</strong></p>
+    <p style="margin:0;">{{ appointment.email }}</p>
+    {% if appointment.user %}
+      <p style="margin:0; font-size:0.9rem; color:#666;">Username: {{ appointment.user.username }}</p>
+    {% endif %}
+  </div>
+
+  <!-- 💇 Services Table -->
+  <div class="bill-section">
+    <p class="bill-section-title">Services</p>
+    <table class="bill-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th style="width:120px;">Duration</th>
+          <th style="width:120px;">Price (€)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if services %}
+          {% for item in services %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.time }} mins</td>
+              <td>{{ item.cost }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td>{{ appointment.get_service_display }}</td>
+            <td>—</td>
+            <td>{{ appointment.total_cost|default:"0" }}</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+
+
+
+  {% if appointment.status != "CANCELLED" %}
+    <div class="text-center mt-4">
+      <a href="{% url 'payment_page' appointment.pk %}" class="btn btn-dark px-4">
+        Proceed to Payment
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- 🧾 Summary -->
+  <div class="bill-summary">
+    <p><strong>Subtotal:</strong> €{{ subtotal }}</p>
+    <p><strong>Tax ({{ tax_rate }}%):</strong> €{{ tax_amount }}</p>
+    <p><strong>Grand Total:</strong> €{{ grand_total }}</p>
+  </div>
+
+  {% if appointment.notes %}
+    <div class="bill-section">
+      <p class="bill-section-title">Notes</p>
+      <p style="font-size:0.9rem; color:#555;">{{ appointment.notes }}</p>
+    </div>
+  {% endif %}
+
+  <div class="bill-footer">
+    <p>Thank you for choosing SalonSync ✨</p>
+    <p>We look forward to pampering you again!</p>
+  </div>
+
+  <div class="text-center btn-back">
+    <a href="{% url 'my_appointments' %}" class="btn btn-outline-dark btn-sm">Back to My Appointments</a>
+  </div>
+</div>
+{% endblock %}

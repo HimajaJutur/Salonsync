@@ -1,0 +1,290 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% block title %}Book Appointment | SalonSync{% endblock %}
+
+{% block content %}
+<div class="container my-5" style="max-width: 750px;">
+  <h2 class="mb-4 text-center"> Book Your Appointment</h2>
+
+  <!--  Success or Error Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!--  Selected Services Summary -->
+  <div class="card shadow-sm mb-4 border-0 rounded-4">
+    <div class="card-body text-center">
+      <h5 class="fw-semibold"> Your Selected Services</h5>
+      <ul id="selectedServicesList" class="list-unstyled my-2"></ul>
+      <p class="mb-0">
+        <strong>Total:</strong> €<span id="totalCost">0</span> |
+        <strong>Time:</strong> <span id="totalTime">0</span> mins
+      </p>
+    </div>
+  </div>
+
+  {% if is_loyal %}
+    <div class="alert alert-success mt-2">
+       You are a Loyalty Member — Special discounts unlocked!
+    </div>
+  {% endif %}
+
+  <!--  TIME SLOT CHECKER -->
+  <div class="card p-4 mb-4 shadow-sm border-0 rounded-4">
+    <h5 class="fw-semibold mb-3">Select Date & Check Available Time Slots</h5>
+
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Choose Date</label>
+        <input type="date" id="slot_date" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <button type="button" class="btn btn-dark w-100 mt-3 mt-md-0" onclick="loadSlots()">
+          Check Slots
+        </button>
+      </div>
+    </div>
+
+    <div id="slot_results" class="mt-3"></div>
+  </div>
+
+  <!-- Coupon Code 
+  <div class="mb-3 text-start">
+    <label class="form-label fw-semibold">Coupon Code</label>
+    <input type="text" name="coupon" id="couponCode" class="form-control" placeholder="Enter coupon (optional)">
+  </div> -->
+
+  <!--  Appointment Form -->
+  <div class="card shadow-sm p-4 border-0 rounded-4">
+    <form method="POST" novalidate>
+      {% csrf_token %}
+
+      <!--  Add More Services -->
+      <div class="mb-3 text-start">
+        <label class="form-label fw-semibold">Add More Services (optional)</label>
+        <select id="addServiceSelect" class="form-select">
+          <option value="">-- No additional service --</option>
+          <!--  EURO prices -->
+          <option value="Luxury Facial" data-cost="17" data-time="60">Luxury Facial — €17 (60 mins)</option>
+          <option value="Express Clean Up" data-cost="9" data-time="30">Express Clean Up — €9 (30 mins)</option>
+          <option value="Haircut & Style" data-cost="12" data-time="45">Haircut & Style — €12 (45 mins)</option>
+          <option value="Hair Spa" data-cost="14" data-time="60">Hair Spa — €14 (60 mins)</option>
+          <option value="Manicure" data-cost="7" data-time="30">Manicure — €7 (30 mins)</option>
+          <option value="Pedicure" data-cost="8" data-time="45">Pedicure — €8 (45 mins)</option>
+        </select>
+      </div>
+
+      <!--  Chosen Date & Time (read-only for user) -->
+      <div class="row">
+        <div class="col-md-6 mb-3 text-start">
+          <label class="form-label fw-semibold">Selected Date</label>
+          <input type="text" id="chosen_date_display" class="form-control" placeholder="Select a slot above" readonly>
+        </div>
+        <div class="col-md-6 mb-3 text-start">
+          <label class="form-label fw-semibold">Selected Time</label>
+          <input type="text" id="chosen_time_display" class="form-control" placeholder="Select a slot above" readonly>
+        </div>
+      </div>
+
+      <!--  REAL Django date & time fields (hidden from user) -->
+      <div style="display:none;">
+        {{ form.date }}
+        {{ form.time }}
+      </div>
+
+      <!--  Notes -->
+      <div class="mb-3 text-start">
+        <label class="form-label fw-semibold">Additional Notes (optional)</label>
+        {{ form.notes }}
+      </div>
+
+
+      <!--  Coupon Selection -->
+      <div class="mb-3 text-start">
+        <label class="form-label fw-semibold">Apply Coupon (optional)</label>
+        <select name="coupon" id="couponDropdown" class="form-select">
+          <option value="">-- No Coupon --</option>
+
+          {% for c in coupons %}
+            <option value="{{ c.code }}">
+              {{ c.code }} — Save €{{ c.discount }} (Min: €{{ c.minimum_amount }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+
+      <!--  Hidden fields for saving services -->
+      <input type="hidden" name="selected_services" id="selectedServicesField">
+      <input type="hidden" name="total_cost" id="totalCostField">
+      <input type="hidden" name="total_minutes" id="totalMinutesField">
+      
+
+
+      <!--  Buttons -->
+      <div class="text-center">
+        <button type="submit" class="btn btn-dark px-4">Submit Booking</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4 ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!--  JS LOGIC -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Load from localStorage (from Services page)
+  let selectedServices = JSON.parse(localStorage.getItem('selectedServices') || '[]');
+  let totalCost = parseInt(localStorage.getItem('totalCost') || '0');
+  let totalTime = parseInt(localStorage.getItem('totalTime') || '0');
+
+  const list = document.getElementById("selectedServicesList");
+  const costDisplay = document.getElementById("totalCost");
+  const timeDisplay = document.getElementById("totalTime");
+
+  const selectedServicesField = document.getElementById("selectedServicesField");
+  const totalCostField = document.getElementById("totalCostField");
+  const totalMinutesField = document.getElementById("totalMinutesField");
+
+  function updateSummary() {
+    list.innerHTML = "";
+    selectedServices.forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = `${s.name} — €${s.cost} (${s.time} mins)`;
+      list.appendChild(li);
+    });
+
+    costDisplay.textContent = totalCost;
+    timeDisplay.textContent = totalTime;
+
+    // Push to hidden fields for Django
+    selectedServicesField.value = JSON.stringify(selectedServices);
+    totalCostField.value = totalCost;
+    totalMinutesField.value = totalTime;
+  }
+
+  updateSummary();
+
+  //  Add More Services from dropdown
+  document.getElementById("addServiceSelect").addEventListener("change", function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const name = selectedOption.value;
+    const cost = parseInt(selectedOption.dataset.cost || "0");
+    const time = parseInt(selectedOption.dataset.time || "0");
+
+    if (!name) return;
+
+    // prevent duplicate
+    if (selectedServices.some(s => s.name === name)) {
+      alert(` ${name} is already selected.`);
+      this.value = "";
+      return;
+    }
+
+    selectedServices.push({ name, cost, time });
+    totalCost += cost;
+    totalTime += time;
+    this.value = "";
+    updateSummary();
+
+    // also update localStorage so Services page sees it too
+    localStorage.setItem("selectedServices", JSON.stringify(selectedServices));
+    localStorage.setItem("totalCost", String(totalCost));
+    localStorage.setItem("totalTime", String(totalTime));
+  });
+});
+
+
+
+
+//  SLOT CHECKING + SELECTION
+function loadSlots() {
+  const dateInput = document.getElementById("slot_date");
+  const dateVal = dateInput.value;
+  const totalTime = parseInt(localStorage.getItem("totalTime") || "0");
+
+  if (!dateVal) {
+    alert("Please select a date first.");
+    return;
+  }
+
+  if (totalTime === 0) {
+    alert("Please select at least one service before checking slots.");
+    return;
+  }
+
+  fetch(`/check-slots/?date=${dateVal}&duration=${totalTime}`)
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("slot_results");
+
+      if (data.error) {
+        box.innerHTML = `<p class="text-danger">${data.error}</p>`;
+        return;
+      }
+
+      if (!data.slots || data.slots.length === 0) {
+        box.innerHTML = "<p class='text-danger'>❌ No slots available for this day.</p>";
+        return;
+      }
+
+      let html = "<h6 class='mb-2'>Available Slots:</h6><div class='d-flex flex-wrap gap-2'>";
+      data.slots.forEach(s => {
+        html += `<button type="button" class="btn btn-outline-dark btn-sm" onclick="selectSlot('${s}', '${dateVal}')">${s}</button>`;
+      });
+      html += "</div>";
+
+      box.innerHTML = html;
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById("slot_results").innerHTML =
+        "<p class='text-danger'>Something went wrong while loading slots.</p>";
+    });
+}
+
+function selectSlot(timeVal, dateVal) {
+  // Show chosen date/time to user (read-only)
+  document.getElementById("chosen_date_display").value = dateVal;
+  document.getElementById("chosen_time_display").value = timeVal;
+
+  // Write into REAL hidden Django fields (these IDs come from Django)
+  const dateField = document.getElementById("id_date");
+  const timeField = document.getElementById("id_time");
+
+  if (dateField) dateField.value = dateVal;
+  if (timeField) timeField.value = timeVal;
+
+  alert(`Selected ${dateVal} at ${timeVal}`);
+}
+
+
+//  Handle coupon selection
+document.getElementById("couponSelect").addEventListener("change", function() {
+    const selected = this.options[this.selectedIndex];
+    const code = selected.value;
+    const discount = selected.dataset.discount || 0;
+
+    if (!code) {
+        document.getElementById("couponMessage").style.display = "none";
+        document.getElementById("appliedCouponField").value = "";
+        document.getElementById("discountAmountField").value = 0;
+        return;
+    }
+
+    document.getElementById("couponMessage").innerHTML =
+        `✔ Coupon <strong>${code}</strong> applied! You saved €${discount}.`;
+    document.getElementById("couponMessage").style.display = "block";
+
+    // Fill hidden fields
+    document.getElementById("appliedCouponField").value = code;
+    document.getElementById("discountAmountField").value = discount;
+});
+
+</script>
+{% endblock %}

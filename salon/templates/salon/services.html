@@ -1,0 +1,275 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% block title %}Services | SalonSync{% endblock %}
+{% load convert %} 
+
+{% block content %}
+<style>
+  body { 
+    background: #fafafa; 
+    font-family: 'Poppins', sans-serif; 
+  }
+
+  .category-title {
+    text-align: center;
+    margin: 60px 0 30px;
+    font-weight: 700;
+    color: #d4a762;
+    font-size: 1.9rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Card styling */
+  .service-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.35s ease;
+  }
+
+  .service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.15);
+  }
+
+  /*  Image */
+  .service-img {
+    height: 250px;
+    width: 100%;
+    object-fit: contain;
+    background-color: #f7f7f7;
+    border-bottom: 4px solid #f2d3a0;
+  }
+
+  .service-card .card-body {
+    padding: 22px;
+  }
+
+  .service-card h5 {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+  }
+
+  .service-card p {
+    color: #666;
+    font-size: 0.95rem;
+  }
+
+  /* Buttons */
+  .btn-add {
+    background: linear-gradient(90deg, #d4a762, #e7c07d);
+    color: #000;
+    border-radius: 30px;
+    font-weight: 600;
+    padding: 8px 24px;
+    border: none;
+    transition: all 0.3s ease;
+  }
+
+  .btn-add:hover {
+    background: linear-gradient(90deg, #e7c07d, #d4a762);
+  }
+
+  .btn-added {
+    background: #000;
+    color: white;
+    border-radius: 30px;
+    font-weight: 600;
+    padding: 8px 24px;
+    border: none;
+  }
+
+  /* Summary box */
+  .summary-box {
+    background: #fff6e8;
+    padding: 30px;
+    border-radius: 16px;
+    margin: 60px 0;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  }
+
+  .summary-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0;
+  }
+
+  .summary-box ul li {
+    margin: 5px 0;
+    font-weight: 500;
+    font-size: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .service-img {
+      height: 220px;
+    }
+  }
+</style>
+
+<div class="container my-5">
+
+  <section class="hero-banner"
+            style="
+              background: url("{% static 'salon/img/services-banner.jpg' %}") center center / contain no-repeat;
+              background-color: #000;
+              height: auto;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 30px 0;
+            ">
+    <img src="{% static 'salon/img/services-banner.jpg' %}"
+         alt="Services Banner"
+         style = "max-width: 100%; height: auto; display: block; border-radius: 10px;">
+  </section>
+
+  <div style="height: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.3), #fafafa);"></div>
+
+  <!--  Skin Care -->
+  <h4 class="category-title">Skin Care</h4>
+  <div class="row justify-content-center g-4">
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/facial.jpg' %}" class="service-img" alt="Luxury Facial">
+        <div class="card-body">
+          <h5>Luxury Facial</h5>
+          <p>Deep cleansing & glow-enhancing facial.</p>
+          <p><strong>Duration:</strong> 60 mins | <strong>Cost:</strong>€{{ 1500|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Luxury Facial',  {{ 1500|inr_to_eur }}, 60)">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/cleanup.jpg' %}" class="service-img" alt="Express Clean Up">
+        <div class="card-body">
+          <h5>Express Clean Up</h5>
+          <p>Quick refresh to remove impurities.</p>
+          <p><strong>Duration:</strong> 30 mins | <strong>Cost:</strong> €{{ 800|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Express Clean Up',  {{ 800|inr_to_eur }}, 30)">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  Hair Care -->
+  <h4 class="category-title">Hair Care</h4>
+  <div class="row justify-content-center g-4">
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/haircut.jpg' %}" class="service-img" alt="Haircut & Style">
+        <div class="card-body">
+          <h5>Haircut & Style</h5>
+          <p>Trendy cut with professional styling.</p>
+          <p><strong>Duration:</strong> 45 mins | <strong>Cost:</strong> €{{ 1000|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Haircut & Style',  {{ 1000|inr_to_eur }}, 45)">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/hairspa.jpg' %}" class="service-img" alt="Hair Spa">
+        <div class="card-body">
+          <h5>Hair Spa</h5>
+          <p>Nourish your hair & relax your mind.</p>
+          <p><strong>Duration:</strong> 60 mins | <strong>Cost:</strong> €{{ 1200|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Hair Spa', {{ 1200|inr_to_eur }}, 60)">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  Hands & Feet -->
+  <h4 class="category-title">Hands & Feet</h4>
+  <div class="row justify-content-center g-4">
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/manicure.jpg' %}" class="service-img" alt="Manicure">
+        <div class="card-body">
+          <h5>Manicure</h5>
+          <p>Gentle care for healthy nails.</p>
+          <p><strong>Duration:</strong> 30 mins | <strong>Cost:</strong> €{{ 600|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Manicure',  {{ 600|inr_to_eur }}, 30)">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="service-card text-center">
+        <img src="{% static 'salon/img/pedicure.jpg' %}" class="service-img" alt="Pedicure">
+        <div class="card-body">
+          <h5>Pedicure</h5>
+          <p>Relaxing treatment for your feet.</p>
+          <p><strong>Duration:</strong> 45 mins | <strong>Cost:</strong> €{{ 700|inr_to_eur }}</p>
+          <button class="btn btn-add" onclick="toggleService(this, 'Pedicure',  {{ 700|inr_to_eur }}, 45)">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  Summary Box -->
+  <div class="summary-box mt-5">
+    <h4> Your Selected Services</h4>
+    <ul id="serviceList"></ul>
+    <p><strong>Total Cost:</strong> €<span id="totalCost">0</span></p>
+    <p><strong>Total Time:</strong> <span id="totalTime">0</span> mins</p>
+    <button class="btn btn-dark rounded-pill px-4 mt-3" onclick="goToBooking()">Proceed to Book Appointment</button>
+  </div>
+</div>
+
+<script>
+  let totalCost = 0;
+  let totalTime = 0;
+  const selectedServices = [];
+
+  function toggleService(button, name, cost, time) {
+    const index = selectedServices.findIndex(s => s.name === name);
+
+    if (index === -1) {
+      // Add service
+      selectedServices.push({ name, cost, time });
+      totalCost += cost;
+      totalTime += time;
+      button.textContent = "Added";
+      button.classList.remove("btn-add");
+      button.classList.add("btn-added");
+    } else {
+      // Remove service
+      selectedServices.splice(index, 1);
+      totalCost -= cost;
+      totalTime -= time;
+      button.textContent = "Add";
+      button.classList.remove("btn-added");
+      button.classList.add("btn-add");
+    }
+
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const list = document.getElementById("serviceList");
+    list.innerHTML = "";
+    selectedServices.forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = `${s.name} — €${s.cost} (${s.time} mins)`;
+      list.appendChild(li);
+    });
+
+    document.getElementById("totalCost").textContent = totalCost;
+    document.getElementById("totalTime").textContent = totalTime;
+  }
+
+  function goToBooking() {
+    localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
+    localStorage.setItem('totalCost', totalCost);
+    localStorage.setItem('totalTime', totalTime);
+    window.location.href = "{% url 'book_appointment' %}";
+  }
+</script>
+{% endblock %}

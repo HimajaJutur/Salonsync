@@ -1,0 +1,16 @@
+{% extends 'salon/base.html' %}
+{% block content %}
+<div class="container mt-5 text-center">
+
+  <h2>💳 Payment for Appointment #{{ appointment.pk }}</h2>
+  <p>Total Amount: <strong>€{{ grand_total }}</strong></p>
+
+  <img src="{% url 'payment_qr' appointment.pk %}" 
+       alt="QR Code" 
+       class="img-fluid mt-3" 
+       style="max-width: 250px;">
+
+  <p class="mt-3">Scan this QR code to pay.</p>
+
+</div>
+{% endblock %}

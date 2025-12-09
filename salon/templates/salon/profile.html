@@ -1,0 +1,9 @@
+{% extends 'salon/base.html' %}
+{% block title %}Profile | SalonSync{% endblock %}
+{% block content %}
+<div class="container text-center mt-5">
+  <h2>👤 {{ request.user.username }}'s Profile</h2>
+  <p>Email: {{ request.user.email }}</p>
+  <p>Welcome to your personalized profile dashboard 💖</p>
+</div>
+{% endblock %}

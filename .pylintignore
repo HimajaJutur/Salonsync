@@ -1,0 +1,4 @@
+migrations/*
+env/*
+media/*
+static/*

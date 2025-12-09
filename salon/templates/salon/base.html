@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}SalonSync{% endblock %}</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
+        rel="stylesheet" crossorigin="anonymous" />
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'salon/img/logo.png' %}" />
+
+  <!-- CSS Styling -->
+  <style>
+    body {
+      background: #fafafa;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* 🔸 NAVBAR */
+    .navbar {
+      background: #000 !important;
+      z-index: 1030;
+      padding: 0.6rem 1rem;
+    }
+
+    .navbar-brand {
+      color: #e7c07d !important;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+      font-size: 14px;
+      text-transform: uppercase;
+      margin: 0 8px;
+      transition: 0.3s;
+    }
+
+    .nav-link:hover {
+      color: #e7c07d !important;
+    }
+
+    main {
+      margin-top: 90px;
+    }
+
+    /* 🔸 Dropdown menu */
+    .dropdown-menu {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      z-index: 2000 !important;
+      margin-top: 10px;
+    }
+
+    .dropdown-menu a {
+      color: #000 !important;
+      text-decoration: none;
+      display: block;
+      padding: 6px 0;
+    }
+
+    .dropdown-menu a:hover {
+      color: #d4a762 !important;
+    }
+
+    /* 4-column dropdown for Services */
+    .navbar-nav .dropdown.position-static:hover .dropdown-menu {
+      display: block;
+      width: 100%;
+      left: 0;
+      right: 0;
+    }
+
+    .navbar-nav .dropdown-menu .row {
+      margin: 0;
+    }
+
+    .navbar-nav .dropdown-menu .col-md-3 {
+      padding: 10px 15px;
+    }
+
+    .navbar-nav .dropdown-menu h6 {
+      color: #000;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    /* Book Appointment button */
+    .btn-book {
+      background: #e7c07d;
+      color: #000;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      padding: 8px 20px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-book:hover {
+      background: #d4a762;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 🖤 NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm">
+    <div class="container-fluid px-4">
+
+      <!-- LOGO / BRAND -->
+      <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">My SalonSync</a>
+
+      <!-- Mobile toggle -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Navbar Menu -->
+      <div class="collapse navbar-collapse justify-content-between" id="navbarMain">
+
+        <!-- LEFT SIDE MENU -->
+        <ul class="navbar-nav mb-2 mb-lg-0">
+
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'services' %}">Services</a>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'salon_location' %}">Salon Location</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Contact</a></li>
+        </ul>
+
+        <!-- RIGHT SIDE -->
+        <ul class="navbar-nav align-items-center">
+          <!-- Account Dropdown -->
+          <li class="nav-item dropdown me-3">
+            <a class="nav-link dropdown-toggle" href="#" id="accountMenu" data-bs-toggle="dropdown">
+              <i class="fa-solid fa-user me-1"></i> Account
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
+              {% if user.is_authenticated %}
+                <li><h6 class="dropdown-header">Signed in as <strong>{{ user.username }}</strong></h6></li>
+                <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_appointments' %}">My Appointments</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Logout</a></li>
+              {% if is_loyal %}
+              <li><span class="dropdown-item text-success fw-bold">🌟 Loyalty Member</span></li>
+              {% endif %}
+              {% else %}
+                <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+                <li><a class="dropdown-item" href="{% url 'register' %}">Register</a></li>
+              {% endif %}
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 🌸 PAGE CONTENT -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!--  Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          crossorigin="anonymous"></script>
+
+  <!-- 🔍 Bootstrap Dropdown Debug -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof bootstrap !== "undefined") {
+        console.log("✅ Bootstrap dropdown system active");
+        document.querySelectorAll(".dropdown-toggle").forEach(el => new bootstrap.Dropdown(el));
+      } else {
+        console.error("❌ Bootstrap not loaded properly");
+      }
+    });
+  </script>
+
+</body>
+</html>

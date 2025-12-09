@@ -1,0 +1,15 @@
+{% extends 'salon/base.html' %}
+{% block title %}Choose Payment Method{% endblock %}
+
+{% block content %}
+<div class="container my-5 text-center">
+    <h2>💳 Choose Payment Method</h2>
+    <p>Your total amount: <strong>€{{ appointment.total_cost }}</strong></p>
+
+    <div class="d-flex justify-content-center gap-3 mt-4">
+        <a href="{% url 'qr_payment' appointment.pk %}" class="btn btn-dark px-4">Pay by QR</a>
+        <a href="{% url 'card_payment' appointment.pk %}" class="btn btn-primary px-4">Pay by Card</a>
+        <a href="{% url 'cash_payment' appointment.pk %}" class="btn btn-success px-4">Pay by Cash</a>
+    </div>
+</div>
+{% endblock %}

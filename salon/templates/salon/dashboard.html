@@ -1,0 +1,237 @@
+{% extends 'salon/base.html' %}
+{% load static %}
+{% block title %}Dashboard | SalonSync{% endblock %}
+
+{% block content %}
+<!-- ✅ CUSTOM CSS -->
+<style>
+/* === HERO / BANNER === */
+.hero {
+  background: url("{% static 'salon/img/banner.jpg' %}") no-repeat center/cover;
+  height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  position: relative;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+}
+.hero-text {
+  position: relative;
+  z-index: 1;
+}
+.hero-text h1 {
+  font-size: 3rem;
+  letter-spacing: 1px;
+}
+.hero-text h1 span {
+  color: #e7c07d;
+}
+.hero-text p {
+  font-size: 1.1rem;
+  margin: 10px 0 20px 0;
+}
+.book-btn {
+  background: linear-gradient(90deg, #e7c07d, #f7dca1);
+  color: #000;
+  padding: 10px 25px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.book-btn:hover {
+  background: linear-gradient(90deg, #f7dca1, #e7c07d);
+  transform: scale(1.05);
+}
+
+/* === SERVICES === */
+.services {
+  padding: 60px 80px;
+  text-align: center;
+  background-color: #fff;
+}
+.services h2 {
+  color: #222;
+  font-size: 2rem;
+  font-weight: 600;
+}
+.service-cards {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 260px;
+  padding: 20px;
+  text-align: center;
+  transition: 0.3s;
+}
+.card img {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.card:hover {
+  transform: translateY(-8px);
+}
+
+/* === OFFERS === */
+.offers {
+  background: #fff6e8;
+  padding: 50px 80px;
+  text-align: center;
+}
+.offers h2 {
+  color: #222;
+  font-size: 2rem;
+  font-weight: 600;
+}
+.offer-banners {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.offer {
+  background: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 280px;
+  transition: 0.3s;
+}
+.offer:hover {
+  transform: scale(1.05);
+}
+
+/* === FOOTER === */
+.footer {
+  background: #000;
+  color: #fff;
+  padding: 50px 80px 20px;
+}
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  text-align: left;
+}
+.footer-content h3 {
+  font-size: 24px;
+  color: #e7c07d;
+}
+.footer-content h4 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.footer-content ul {
+  list-style: none;
+  padding: 0;
+}
+.footer-content ul li {
+  margin: 6px 0;
+}
+.footer-content ul li a {
+  color: #ccc;
+  text-decoration: none;
+  transition: 0.3s;
+}
+.footer-content ul li a:hover {
+  color: #e7c07d;
+}
+.footer hr {
+  margin: 20px 0;
+  border: 0.5px solid #333;
+}
+.footer-bottom {
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .hero {
+    height: 55vh;
+  }
+  .hero-text h1 {
+    font-size: 2rem;
+  }
+  .services,
+  .offers {
+    padding: 40px 20px;
+  }
+  .footer {
+    padding: 40px 20px;
+  }
+}
+</style>
+
+<!--  HERO / BANNER SECTION -->
+<div class="hero">
+  <div class="hero-text">
+    <h1>Welcome to <span>SalonSync</span></h1>
+    <p>Your one-stop destination for beauty, style, and relaxation 💇‍♀️</p>
+    <a href="{% url 'book_appointment' %}" class="book-btn">Book Appointment</a>
+  </div>
+</div>
+
+<div style="height: 3px; background: white; width: 100%;"></div>
+
+
+
+<!-- 🖤 FOOTER -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <h3>SalonSync</h3>
+      <p>Redefining beauty & relaxation one visit at a time.</p>
+    </div>
+    <div class="footer-center">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="{% url 'book_appointment' %}">Book Appointment</a></li>
+        <li><a href="{% url 'services' %}">Services</a></li>
+        <li><a href="{% url 'salon_location' %}">Salon Location</a></li>
+      </ul>
+    </div>
+    <div class="footer-right">
+      <h4>Contact Us</h4>
+      <p>📍 Dublin, Ireland</p>
+      <p>📧 salonsync@gmail.com</p>
+      <p>📞 +353 1 234 5678</p>
+    </div>
+  </div>
+  <hr>
+  <p class="footer-bottom">© 2025 SalonSync</p>
+</footer>
+
+{% if is_loyal %}
+  <div class="alert alert-success text-center fw-bold">
+    🌟 You are a Loyalty Member! Enjoy exclusive discounts 🌟
+  </div>
+{% else %}
+  <div class="alert alert-info text-center">
+    💳 Spend €300 to unlock a Loyalty Membership & get extra rewards!
+  </div>
+{% endif %}
+
+
+{% endblock %}
