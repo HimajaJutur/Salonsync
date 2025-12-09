@@ -1,76 +1,106 @@
-name: Django CI
+name: Deploy to Elastic Beanstalk
 
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: ["Django CI"]
+    types: [completed]
+    branches: [main]
+
+  # ➤ Added manual trigger
+  workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
+    # Only deploy if triggered manually or CI succeeded
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success')
+
     steps:
-    # 1. Checkout code
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+      # Checkout repo
+      - name: Download Build Artifact
+        uses: actions/checkout@v4
+      
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      # Install EB CLI
+      - name: Install EB CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install awsebcli
+      
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      # Verify environment exists
+      - name: Verify EB environment exists
+        run: |
+          echo "Checking if environment exists..."
+          ENV_STATUS=$(aws elasticbeanstalk describe-environments \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-names ${{ secrets.EB_ENV_NAME }} \
+            --query 'Environments[?Status!=`Terminated`] | [0].Status' \
+            --output text)
+          
+          if [ -z "$ENV_STATUS" ] || [ "$ENV_STATUS" == "None" ]; then
+            echo "❌ Error: Environment ${{ secrets.EB_ENV_NAME }} does not exist!"
+            echo "Please create the environment first using deploy_eb.py or AWS Console"
+            exit 1
+          else
+            echo "✓ Environment exists with status: $ENV_STATUS"
+          fi
+      
+      # Get platform ARN for eb init
+      - name: Get latest Python platform
+        id: platform
+        run: |
+          PLATFORM_ARN=$(aws elasticbeanstalk list-platform-versions \
+            --filters Type=PlatformName,Operator=contains,Values=Python \
+            --query 'PlatformSummaryList[?PlatformStatus==`Ready`] | [0].PlatformArn' \
+            --output text)
+          echo "platform_arn=$PLATFORM_ARN" >> $GITHUB_OUTPUT
+          echo "Using platform: $PLATFORM_ARN"
+      
+      # Set environment variables from GitHub Secrets
+      - name: Set environment variables in EB
+        run: |
+          echo "Setting environment variables in Elastic Beanstalk..."
+          aws elasticbeanstalk update-environment \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-name ${{ secrets.EB_ENV_NAME }} \
+            --option-settings \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=SECRET_KEY,Value="${{ secrets.SECRET_KEY }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_PASSWORD,Value="${{ secrets.EMAIL_HOST_PASSWORD }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_USER,Value="${{ secrets.EMAIL_HOST_USER }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_PORT,Value="${{ secrets.EMAIL_PORT }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=DEBUG,Value="False"
 
-    # 2. Setup Python
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-
-    # 3. Install dependencies
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install coverage pylint
-
-    # 4. Load environment variables
-    - name: Set environment variables
-      run: |
-        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
-        echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> $GITHUB_ENV
-        echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> $GITHUB_ENV
-        echo "EMAIL_HOST=smtp.gmail.com" >> $GITHUB_ENV
-        echo "EMAIL_PORT=587" >> $GITHUB_ENV
-        echo "EMAIL_USE_TLS=True" >> $GITHUB_ENV
-        echo "DEBUG=False" >> $GITHUB_ENV
-
-    # 5. Run pylint (no fail for now)
-    - name: Run pylint
-      run: |
-        pylint salon salonsync manage.py || true
-
-    # 6. Run tests with coverage - FIXED to include salon app
-    - name: Run tests with coverage
-      run: |
-        coverage run --source='salon' --omit='*/migrations/*,*/tests/*' manage.py test salon
-        coverage report
-        coverage xml -o coverage.xml
-
-    # 7. Verify coverage file exists
-    - name: Verify coverage file
-      run: |
-        ls -lh coverage.xml
-        head -20 coverage.xml
-
-    # 8. SonarCloud Scan with test coverage
-    - name: SonarCloud Scan
-      uses: sonarsource/sonarcloud-github-action@v3
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        args: >
-          -Dsonar.projectKey=HimajaJutur_Salonsync
-          -Dsonar.organization=himajajutur
-          -Dsonar.sources=salon,salonsync
-          -Dsonar.python.version=3.12
-          -Dsonar.python.coverage.reportPaths=coverage.xml
-          -Dsonar.exclusions=**/env/**,**/migrations/**,**/static/**,**/media/**,**/tests/**
-          -Dsonar.test.inclusions=**/tests/**
-          -Dsonar.tests=salon/tests
-          -Dsonar.coverage.exclusions=**/migrations/**,**/tests/**
+          echo "Waiting for environment update to complete..."
+          aws elasticbeanstalk wait environment-updated \
+            --application-name ${{ secrets.EB_APP_NAME }} \
+            --environment-names ${{ secrets.EB_ENV_NAME }}
+          echo "✓ Environment variables set successfully!"
+      
+      # Deploy application
+      - name: Deploy to Elastic Beanstalk
+        run: |
+          # ➤ REMOVED the problematic "cd salonsync"
+          eb init ${{ secrets.EB_APP_NAME }} \
+            --region "${{ secrets.AWS_REGION }}" \
+            --platform "${{ steps.platform.outputs.platform_arn }}"
+          eb deploy ${{ secrets.EB_ENV_NAME }} \
+            --label "deploy-${{ github.run_id }}" \
+            --timeout 20
