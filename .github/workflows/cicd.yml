@@ -1,96 +1,170 @@
-deploy:
-  needs: ci
-  runs-on: ubuntu-latest
-  if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-  environment:
-    name: production
+name: CI + CD Pipeline
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+on:
+  push:
+    branches: [main, master]
+  pull_request:
 
-    - name: Download deployment artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: deploy-zip
-        path: .
+permissions:
+  actions: read
+  contents: read
 
-    - name: Unzip deployment package
-      run: unzip -o app.zip -d deploy
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    
+    env:
+      GITHUB_ACTIONS: true
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SETTINGS_MODULE: CakeApp.settings
+      STRIPE_SECRET_KEY: sk_test_mock_key
+      STRIPE_PUBLISHABLE_KEY: pk_test_mock_key
+      AWS_ACCESS_KEY_ID: test_access_key
+      AWS_SECRET_ACCESS_KEY: test_secret_key
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_STORAGE_BUCKET_NAME: test-bucket
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-django
+      
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+      
+      - name: Run tests
+        run: pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing -v
+      
+      - name: Verify coverage file
+        run: |
+          if [ ! -f "coverage.xml" ]; then
+            echo "Coverage file missing!"
+            exit 1
+          fi
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+        continue-on-error: true
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
+      - name: Build Deployment ZIP
+        run: |
+          zip -r app.zip . \
+            -x "env/*" \
+            -x "venv/*" \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "*.pyc" \
+            -x "**/__pycache__/*" \
+            -x "*.coverage" \
+            -x ".pytest_cache/*" \
+            -x ".scannerwork/*" \
+            -x "htmlcov/*" \
+            -x "coverage.xml"
+      
+      - name: Upload artifact for deploy step
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-zip
+          path: app.zip
+          retention-days: 10
 
-    - name: Setup Python 3.9  # ✔ MATCHES EB PLATFORM
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
 
-    - name: Install AWS CLI and EB CLI
-      run: |
-        python -m pip install --upgrade pip
-        pip install awscli awsebcli
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    environment:
+      name: production
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: us-east-1
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-zip
+          path: .
 
-    - name: Deploy to Elastic Beanstalk
-      id: deploy
-      working-directory: ./deploy
-      run: |
-        set -e
-        
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        S3_BUCKET="elasticbeanstalk-us-east-1-${ACCOUNT_ID}"
-        VERSION_LABEL="v-${{ github.run_number }}-$(echo ${{ github.sha }} | cut -c1-7)-$(date +%s)"
-        
-        APP_NAME="salon"         # ✔ FIXED
-        ENV_NAME="salonenv"      # ✔ FIXED
+      - name: Extract artifact
+        run: unzip -o app.zip -d deploy
 
-        echo "Deployment Info:"
-        echo "Version: ${VERSION_LABEL}"
-        echo "Application: ${APP_NAME}"
-        echo "Environment: ${ENV_NAME}"
-        echo "Bucket: ${S3_BUCKET}"
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-        echo "== Zipping Deployment Package =="
-        zip -r ../deploy.zip . \
-          -x ".git" \
-          -x ".scannerwork" \
-          -x ".pytest_cache" \
-          -x "_pycache_" \
-          -x ".coverage" \
-          -x "htmlcov/*"
+      - name: Install AWS + EB CLI
+        run: |
+          pip install --upgrade pip
+          pip install awscli awsebcli
 
-        echo "Uploading version to S3..."
-        aws s3 cp ../deploy.zip "s3://${S3_BUCKET}/${APP_NAME}/${VERSION_LABEL}.zip"
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
 
-        echo "Creating application version..."
-        aws elasticbeanstalk create-application-version \
-          --application-name "$APP_NAME" \
-          --version-label "$VERSION_LABEL" \
-          --source-bundle S3Bucket="${S3_BUCKET}",S3Key="${APP_NAME}/${VERSION_LABEL}.zip"
+      - name: Deploy to Elastic Beanstalk
+        working-directory: deploy
+        id: deploy
+        run: |
+          set -e
 
-        echo "Deploying version to environment..."
-        aws elasticbeanstalk update-environment \
-          --application-name "$APP_NAME" \
-          --environment-name "$ENV_NAME" \
-          --version-label "$VERSION_LABEL"
+          APP_NAME="FinalCakeApp"
+          ENV_NAME="finalcake-env"
 
-        echo "Waiting for EB to finish..."
-        aws elasticbeanstalk wait environment-updated \
-          --application-name "$APP_NAME" \
-          --environment-names "$ENV_NAME"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          S3_BUCKET="elasticbeanstalk-us-east-1-${ACCOUNT_ID}"
 
-        ENV_URL=$(aws elasticbeanstalk describe-environments \
-          --application-name "$APP_NAME" \
-          --environment-names "$ENV_NAME" \
-          --query "Environments[0].CNAME" \
-          --output text)
+          VERSION_LABEL="v-${{ github.run_number }}-$(echo ${{ github.sha }} | cut -c1-7)"
 
-        echo "url=http://${ENV_URL}" >> $GITHUB_OUTPUT
-        echo ""
-        echo "🚀 Deployment Complete!"
-        echo "Visit → http://${ENV_URL}"
+          echo "Creating final deploy bundle..."
+          zip -r ../deploy-final.zip .
+
+          echo "Uploading bundle to S3..."
+          aws s3 cp ../deploy-final.zip "s3://${S3_BUCKET}/${APP_NAME}/${VERSION_LABEL}.zip"
+
+          echo "Creating EB application version..."
+          aws elasticbeanstalk create-application-version \
+            --application-name "$APP_NAME" \
+            --version-label "$VERSION_LABEL" \
+            --source-bundle S3Bucket="${S3_BUCKET}",S3Key="${APP_NAME}/${VERSION_LABEL}.zip"
+
+          echo "Deploying to environment..."
+          aws elasticbeanstalk update-environment \
+            --environment-name "$ENV_NAME" \
+            --version-label "$VERSION_LABEL"
+
+          echo "Waiting for EB to finish..."
+          aws elasticbeanstalk wait environment-updated --environment-name "$ENV_NAME"
+
+          ENV_URL=$(aws elasticbeanstalk describe-environments \
+            --environment-names "$ENV_NAME" \
+            --query "Environments[0].CNAME" \
+            --output text)
+
+          echo "url=http://${ENV_URL}" >> $GITHUB_OUTPUT
+
+      - name: Deployment Summary
+        run: |
+          echo "### Deployment Completed 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
