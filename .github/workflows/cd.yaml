@@ -79,12 +79,10 @@ jobs:
             --environment-name ${{ secrets.EB_ENV_NAME }} \
             --option-settings \
               Namespace=aws:elasticbeanstalk:application:environment,OptionName=SECRET_KEY,Value="${{ secrets.SECRET_KEY }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=MAILID,Value="${{ secrets.MAILID }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=MAILPASS,Value="${{ secrets.MAILPASS }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=STRIPE_PUBLIC_KEY,Value="${{ secrets.STRIPE_PUBLIC_KEY }}" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=STRIPE_SECRET_KEY,Value="${{ secrets.STRIPE_SECRET_KEY }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_PASSWORD,Value="${{ secrets.EMAIL_HOST_PASSWORD }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_HOST_USER,Value="${{ secrets.EMAIL_HOST_USER }}" \
+              Namespace=aws:elasticbeanstalk:application:environment,OptionName=EMAIL_PORT,Value="${{ secrets.EMAIL_PORT }}" \
               Namespace=aws:elasticbeanstalk:application:environment,OptionName=DEBUG,Value="False" \
-              Namespace=aws:elasticbeanstalk:application:environment,OptionName=ALLOWED_HOSTS,Value="hotel.us-east-1.elasticbeanstalk.com"
           
           echo "Waiting for environment update to complete..."
           aws elasticbeanstalk wait environment-updated \
